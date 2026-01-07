@@ -1,14 +1,38 @@
 [
   {
-    "amount": 17000,
-    "category": "구독",
+    "amount": 3500000,
+    "category": "월급",
     "day": 25,
     "endDate": "2025-12-31",
     "frequency": "MONTHLY_DATE",
-    "id": 101,
+    "id": 1,
     "lastGenerated": "2025-12-25",
+    "name": "월급 급여",
+    "startDate": "2025-01-01",
+    "type": "INCOME"
+  },
+  {
+    "amount": 500000,
+    "category": "주거",
+    "day": 1,
+    "endDate": "2025-12-31",
+    "frequency": "MONTHLY_DATE",
+    "id": 2,
+    "lastGenerated": "2025-12-01",
+    "name": "월세 납부",
+    "startDate": "2025-01-01",
+    "type": "EXPENSE"
+  },
+  {
+    "amount": 17000,
+    "category": "기타",
+    "day": 15,
+    "endDate": "2025-12-31",
+    "frequency": "MONTHLY_DATE",
+    "id": 3,
+    "lastGenerated": "2025-12-15",
     "name": "넷플릭스 구독",
-    "startDate": "2024-01-01",
+    "startDate": "2025-01-01",
     "type": "EXPENSE"
   }
 ]
