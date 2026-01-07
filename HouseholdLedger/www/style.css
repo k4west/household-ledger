@@ -26,6 +26,10 @@ body {
   color: #e53935;
 }
 
+.text-transfer {
+  color: #43a047;
+}
+
 .ledger-table {
   overflow-x: auto;
 }
@@ -48,4 +52,14 @@ body {
   justify-content: center;
   color: #9aa0a6;
   font-size: 0.95rem;
+}
+
+.month-nav {
+  padding: 0.5rem 1rem;
+}
+
+.chart-card {
+  border-radius: 16px;
+  background: #f8f9fc;
+  padding: 1rem;
 }
