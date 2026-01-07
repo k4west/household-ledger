@@ -11,6 +11,7 @@ let selectedMonth = null;
 let activeTypeFilters = new Set(["income", "expense", "transfer"]);
 let activeCategoryFilters = new Set();
 let isYearView = false;
+let memoTransaction = null;
 
 const elements = {
   list: document.getElementById("transaction-list"),
@@ -28,7 +29,7 @@ const elements = {
   nextMonth: document.getElementById("next-month"),
   viewMonth: document.getElementById("view-month"),
   viewYear: document.getElementById("view-year"),
-  filterCategory: document.getElementById("filter-category"),
+  filterCategoryChips: document.getElementById("filter-category-chips"),
   filterTypeInputs: document.querySelectorAll("input[name='filter-type']"),
   addCategoryBtn: document.getElementById("add-category-btn"),
   categoryInput: document.getElementById("new-category-name"),
@@ -40,6 +41,10 @@ const elements = {
   editMemo: document.getElementById("edit-memo"),
   editAmount: document.getElementById("edit-amount"),
   editSaveBtn: document.getElementById("save-edit-btn"),
+  memoModal: document.getElementById("memoModal"),
+  memoMeta: document.getElementById("memo-meta"),
+  memoTextarea: document.getElementById("memo-textarea"),
+  memoSaveBtn: document.getElementById("save-memo-btn"),
 };
 
 function formatAmount(value) {
@@ -93,13 +98,18 @@ function renderTable(list) {
       let amountClass = "text-expense";
       if (tx.type === "income") amountClass = "text-income";
       if (tx.type === "transfer") amountClass = "text-transfer";
+      const memoValue = (tx.memo || "").trim();
+      const memoText = memoValue || "메모 추가";
+      const memoClass = memoValue ? "" : "text-muted";
 
       row.innerHTML = `
         <td>${tx.date || "-"}</td>
         <td>${tx.category || "-"}</td>
-        <td>
+        <td class="memo-cell">
           <span class="badge bg-light text-dark badge-type me-2">${formatType(tx.type)}</span>
-          ${tx.memo || "-"}
+          <button class="btn btn-link p-0 memo-preview ${memoClass}" type="button" data-action="memo" data-id="${tx.id}">
+            ${memoText}
+          </button>
         </td>
         <td class="text-end ${amountClass}">${formatAmount(tx.amount)}</td>
         <td class="text-end">
@@ -218,7 +228,8 @@ function buildSummaryChart(totals) {
 function applyFilters() {
   return transactions.filter((tx) => {
     if (!activeTypeFilters.has(tx.type)) return false;
-    if (activeCategoryFilters.size > 0 && !activeCategoryFilters.has(tx.category)) return false;
+    if (activeCategoryFilters.size === 0) return false;
+    if (!activeCategoryFilters.has(tx.category)) return false;
     return true;
   });
 }
@@ -248,13 +259,45 @@ function buildCategoryOptions(select, list, includeAll = false) {
   });
 }
 
+function buildCategoryChips(list) {
+  elements.filterCategoryChips.innerHTML = "";
+  list.forEach((category) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "category-chip";
+    button.textContent = category;
+    if (activeCategoryFilters.has(category)) {
+      button.classList.add("active");
+    }
+    button.addEventListener("click", () => {
+      if (activeCategoryFilters.has(category)) {
+        activeCategoryFilters.delete(category);
+      } else {
+        activeCategoryFilters.add(category);
+      }
+      button.classList.toggle("active");
+      renderDashboard();
+    });
+    elements.filterCategoryChips.appendChild(button);
+  });
+}
+
 async function fetchCategories() {
   try {
     const response = await fetch(CATEGORIES_ENDPOINT);
     categories = await response.json();
     buildCategoryOptions(elements.category, categories);
     buildCategoryOptions(elements.editCategory, categories);
-    buildCategoryOptions(elements.filterCategory, categories, true);
+    const previousSelections = new Set(activeCategoryFilters);
+    activeCategoryFilters = new Set(
+      categories.filter(
+        (category) => previousSelections.size === 0 || previousSelections.has(category)
+      )
+    );
+    if (activeCategoryFilters.size === 0) {
+      activeCategoryFilters = new Set(categories);
+    }
+    buildCategoryChips(categories);
   } catch (error) {
     console.error("Failed to fetch categories", error);
   }
@@ -343,6 +386,24 @@ function openEditModal(tx) {
   modal.show();
 }
 
+function openMemoModal(tx) {
+  memoTransaction = tx;
+  elements.memoTextarea.value = tx.memo || "";
+  elements.memoMeta.innerHTML = "";
+  const metaItems = [
+    `날짜: ${tx.date || "-"}`,
+    `카테고리: ${tx.category || "-"}`,
+    `금액: ${formatAmount(tx.amount)}`,
+  ];
+  metaItems.forEach((item) => {
+    const span = document.createElement("span");
+    span.textContent = item;
+    elements.memoMeta.appendChild(span);
+  });
+  const modal = new bootstrap.Modal(elements.memoModal);
+  modal.show();
+}
+
 async function addCategory() {
   const name = elements.categoryInput.value.trim();
   if (!name) return;
@@ -359,18 +420,13 @@ async function addCategory() {
   }
 }
 
-function updateFiltersFromInputs() {
+function updateTypeFilters() {
   activeTypeFilters = new Set();
   elements.filterTypeInputs.forEach((input) => {
     if (input.checked) {
       activeTypeFilters.add(input.value);
     }
   });
-  activeCategoryFilters = new Set(
-    Array.from(elements.filterCategory.selectedOptions)
-      .map((option) => option.value)
-      .filter((value) => value !== "all")
-  );
   renderDashboard();
 }
 
@@ -436,13 +492,14 @@ document.addEventListener("DOMContentLoaded", () => {
       deleteTransaction(id);
     } else if (action === "edit" && tx) {
       openEditModal(tx);
+    } else if (action === "memo" && tx) {
+      openMemoModal(tx);
     }
   });
 
   elements.filterTypeInputs.forEach((input) => {
-    input.addEventListener("change", updateFiltersFromInputs);
+    input.addEventListener("change", updateTypeFilters);
   });
-  elements.filterCategory.addEventListener("change", updateFiltersFromInputs);
 
   elements.saveCategoryBtn.addEventListener("click", addCategory);
   elements.addCategoryBtn.addEventListener("click", () => {
@@ -461,6 +518,23 @@ document.addEventListener("DOMContentLoaded", () => {
       amount: Number(elements.editAmount.value),
     };
     updateTransaction(payload);
+  });
+
+  elements.memoSaveBtn.addEventListener("click", () => {
+    if (!memoTransaction) return;
+    const payload = {
+      id: Number(memoTransaction.id),
+      date: memoTransaction.date,
+      type: memoTransaction.type,
+      category: memoTransaction.category,
+      memo: elements.memoTextarea.value.trim(),
+      amount: Number(memoTransaction.amount),
+    };
+    updateTransaction(payload);
+    const modal = bootstrap.Modal.getInstance(elements.memoModal);
+    if (modal) {
+      modal.hide();
+    }
   });
 
   fetchCategories().then(fetchTransactions);
