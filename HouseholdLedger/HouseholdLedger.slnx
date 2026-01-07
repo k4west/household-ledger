@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="HouseholdLedger.vcxproj" />
+  <Project Path="HouseholdLedger.vcxproj" Id="aa053adc-b9b5-42cd-8d72-3821cd5307c5" />
 </Solution>
