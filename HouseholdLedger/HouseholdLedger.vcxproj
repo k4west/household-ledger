@@ -127,10 +127,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AccountManager.cpp" />
+    <ClCompile Include="BudgetManager.cpp" />
+    <ClCompile Include="CategoryManager.cpp" />
+    <ClCompile Include="ScheduleManager.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccountManager.h" />
+    <ClInclude Include="BudgetManager.h" />
+    <ClInclude Include="CategoryManager.h" />
+    <ClInclude Include="ScheduleManager.h" />
     <ClInclude Include="httplib.h" />
     <ClInclude Include="json.hpp" />
     <ClInclude Include="Transaction.h" />

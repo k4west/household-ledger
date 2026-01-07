@@ -63,3 +63,49 @@ body {
   background: #f8f9fc;
   padding: 1rem;
 }
+
+.memo-cell {
+  max-width: 260px;
+}
+
+.memo-preview {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: none;
+  color: inherit;
+}
+
+.memo-preview:hover {
+  text-decoration: underline;
+}
+
+.category-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.category-chip {
+  border: 1px solid #d0d7de;
+  background: #f6f8fa;
+  color: #24292f;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.category-chip.active {
+  background: #1e88e5;
+  color: #fff;
+  border-color: #1e88e5;
+  box-shadow: 0 4px 12px rgba(30, 136, 229, 0.25);
+}
+
+.category-chip:focus-visible {
+  outline: 3px solid rgba(30, 136, 229, 0.35);
+  outline-offset: 2px;
+}

@@ -1,0 +1,19 @@
+{
+  "2025": {
+    "annual_goals": {
+      "total_savings": 12000000,
+      "total_expense_limit": 24000000
+    },
+    "monthly": {
+      "01": {
+        "expenses": {
+          "식비": 500000,
+          "교통": 150000
+        },
+        "goals": {
+          "monthly_savings": 1000000
+        }
+      }
+    }
+  }
+}

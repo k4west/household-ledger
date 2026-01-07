@@ -16,12 +16,19 @@
 </head>
 <body class="bg-light">
   <header class="py-4 mb-4 shadow-sm bg-white">
-    <div class="container d-flex align-items-center gap-3">
-      <div class="logo-circle text-white"><i class="fa-solid fa-coins"></i></div>
-      <div>
-        <h1 class="h3 mb-0">Financial Hero</h1>
-        <p class="text-muted mb-0">Household Ledger Dashboard</p>
+    <div class="container d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="logo-circle text-white"><i class="fa-solid fa-coins"></i></div>
+        <div>
+          <h1 class="h3 mb-0">Financial Hero</h1>
+          <p class="text-muted mb-0">Household Ledger Dashboard</p>
+        </div>
       </div>
+      <nav class="nav nav-pills">
+        <a class="nav-link active" href="index.html">대시보드</a>
+        <a class="nav-link" href="budget.html">예산</a>
+        <a class="nav-link" href="schedules.html">고정 내역</a>
+      </nav>
     </div>
   </header>
 
@@ -147,8 +154,8 @@
             </div>
           </div>
           <div class="col-lg-3">
-            <label class="form-label" for="filter-category">Category Filter</label>
-            <select class="form-select" id="filter-category" multiple size="4"></select>
+            <label class="form-label" for="filter-category-chips">Category Filter</label>
+            <div id="filter-category-chips" class="category-chip-group"></div>
           </div>
         </div>
         <div class="row g-4 mt-2">
@@ -251,7 +258,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label" for="edit-memo">Memo</label>
-            <input class="form-control" type="text" id="edit-memo" />
+            <textarea class="form-control" id="edit-memo" rows="3"></textarea>
           </div>
           <div class="mb-3">
             <label class="form-label" for="edit-amount">Amount</label>
@@ -261,6 +268,26 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
           <button type="button" class="btn btn-primary" id="save-edit-btn" data-bs-dismiss="modal">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="memoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">메모 상세</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex flex-wrap gap-3 mb-3 text-muted small" id="memo-meta"></div>
+          <label class="form-label" for="memo-textarea">Memo</label>
+          <textarea class="form-control" id="memo-textarea" rows="6" placeholder="메모를 입력하세요."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+          <button type="button" class="btn btn-primary" id="save-memo-btn">저장</button>
         </div>
       </div>
     </div>

@@ -8,7 +8,9 @@
 #include <utility>
 
 #include "AccountManager.h"
+#include "BudgetManager.h"
 #include "CategoryManager.h"
+#include "ScheduleManager.h"
 #include "httplib.h"
 #include "json.hpp"
 
@@ -64,7 +66,11 @@ namespace {
         }
     }
 
-    void register_routes(httplib::Server& svr, AccountManager& manager, CategoryManager& categories) {
+    void register_routes(httplib::Server& svr,
+                         AccountManager& manager,
+                         CategoryManager& categories,
+                         BudgetManager& budgets,
+                         ScheduleManager& schedules) {
         svr.set_default_headers({ {"Access-Control-Allow-Origin", "*"} });
 
         svr.Get("/api/transactions", [&manager](const httplib::Request& req, httplib::Response& res) {
@@ -180,6 +186,96 @@ namespace {
             }
             });
 
+        svr.Get("/api/budget", [&budgets](const httplib::Request& req, httplib::Response& res) {
+            auto yearParam = parseIntParam(req, "year");
+            if (!yearParam) {
+                res.status = 400;
+                res.set_content(R"({"error":"missing year"})", "application/json");
+                return;
+            }
+            json payload = budgets.getBudgetForYear(*yearParam);
+            res.set_content(payload.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
+            });
+
+        svr.Post("/api/budget", [&budgets](const httplib::Request& req, httplib::Response& res) {
+            try {
+                auto payload = json::parse(req.body);
+                int year = payload.value("year", 0);
+                if (year <= 0) {
+                    res.status = 400;
+                    res.set_content(R"({"error":"invalid year"})", "application/json");
+                    return;
+                }
+                budgets.upsertBudget(year, payload);
+                res.set_content(R"({"status":"ok"})", "application/json");
+            } catch (const std::exception& ex) {
+                json err{ {"error", ex.what()} };
+                res.status = 400;
+                res.set_content(err.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
+            }
+            });
+
+        svr.Get("/api/schedules", [&schedules](const httplib::Request&, httplib::Response& res) {
+            json payload = schedules.getSchedules();
+            res.set_content(payload.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
+            });
+
+        svr.Post("/api/schedules", [&schedules](const httplib::Request& req, httplib::Response& res) {
+            try {
+                auto payload = json::parse(req.body);
+                ScheduleItem item = payload.get<ScheduleItem>();
+                if (item.id == 0) {
+                    item.id = generateId();
+                }
+                schedules.addSchedule(item);
+                res.status = 201;
+                res.set_content(R"({"status":"ok"})", "application/json");
+            } catch (const std::exception& ex) {
+                json err{ {"error", ex.what()} };
+                res.status = 400;
+                res.set_content(err.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
+            }
+            });
+
+        svr.Put("/api/schedules", [&schedules](const httplib::Request& req, httplib::Response& res) {
+            try {
+                auto payload = json::parse(req.body);
+                ScheduleItem item = payload.get<ScheduleItem>();
+                if (!schedules.updateSchedule(item)) {
+                    res.status = 404;
+                    res.set_content(R"({"error":"not found"})", "application/json");
+                    return;
+                }
+                res.set_content(R"({"status":"ok"})", "application/json");
+            } catch (const std::exception& ex) {
+                json err{ {"error", ex.what()} };
+                res.status = 400;
+                res.set_content(err.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
+            }
+            });
+
+        svr.Delete("/api/schedules", [&schedules](const httplib::Request& req, httplib::Response& res) {
+            if (!req.has_param("id")) {
+                res.status = 400;
+                res.set_content(R"({"error":"missing id"})", "application/json");
+                return;
+            }
+            long long id = 0;
+            try {
+                id = std::stoll(req.get_param_value("id"));
+            } catch (const std::exception&) {
+                res.status = 400;
+                res.set_content(R"({"error":"invalid id"})", "application/json");
+                return;
+            }
+            if (!schedules.deleteSchedule(id)) {
+                res.status = 404;
+                res.set_content(R"({"error":"not found"})", "application/json");
+                return;
+            }
+            res.set_content(R"({"status":"ok"})", "application/json");
+            });
+
         svr.set_mount_point("/", "./www");
     }
 
@@ -199,10 +295,13 @@ namespace {
 int main() {
     AccountManager manager;
     CategoryManager categories;
+    BudgetManager budgets;
+    ScheduleManager schedules;
     categories.loadFromFile();
+    schedules.generateDueTransactions(manager);
 
     httplib::Server svr;
-    register_routes(svr, manager, categories);
+    register_routes(svr, manager, categories, budgets, schedules);
 
     std::thread server([&svr]() {
         std::cout << "\nServer listening on http://localhost:8888\n";
