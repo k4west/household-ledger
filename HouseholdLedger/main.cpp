@@ -66,6 +66,55 @@ namespace {
         }
     }
 
+    Transaction normalizeTransactionCategory(const Transaction& tx, const CategoryManager& categories) {
+        Transaction normalized = tx;
+        normalized.category = categories.normalizeCategory(tx.category);
+        return normalized;
+    }
+
+    std::vector<Transaction> normalizeTransactions(const std::vector<Transaction>& list,
+        const CategoryManager& categories) {
+        std::vector<Transaction> normalized;
+        normalized.reserve(list.size());
+        for (const auto& tx : list) {
+            normalized.push_back(normalizeTransactionCategory(tx, categories));
+        }
+        return normalized;
+    }
+
+    void normalizeBudgetCategories(json& payload, const CategoryManager& categories) {
+        if (!payload.is_object() || !payload.contains("monthly")) {
+            return;
+        }
+        auto& monthly = payload["monthly"];
+        if (!monthly.is_object()) {
+            return;
+        }
+        for (auto& [monthKey, monthValue] : monthly.items()) {
+            if (!monthValue.is_object() || !monthValue.contains("expenses")) {
+                continue;
+            }
+            auto& expenses = monthValue["expenses"];
+            if (!expenses.is_object()) {
+                continue;
+            }
+            std::vector<std::string> toRemove;
+            long long otherTotal = 0;
+            for (const auto& [category, amount] : expenses.items()) {
+                if (!categories.isCategoryValid(category)) {
+                    otherTotal += amount.get<long long>();
+                    toRemove.push_back(category);
+                }
+            }
+            for (const auto& category : toRemove) {
+                expenses.erase(category);
+            }
+            if (otherTotal > 0) {
+                expenses["기타"] = expenses.value("기타", 0) + otherTotal;
+            }
+        }
+    }
+    
     void register_routes(httplib::Server& svr,
                          AccountManager& manager,
                          CategoryManager& categories,
@@ -73,9 +122,9 @@ namespace {
                          ScheduleManager& schedules) {
         svr.set_default_headers({ {"Access-Control-Allow-Origin", "*"} });
 
-        svr.Get("/api/transactions", [&manager](const httplib::Request& req, httplib::Response& res) {
-            auto yearParam = parseIntParam(req, "year");
-            auto monthParam = parseIntParam(req, "month");
+        svr.Get("/api/transactions", [&manager, &categories](const httplib::Request& req, httplib::Response& res) {            auto yearParam = parseIntParam(req, "year");
+        auto yearParam = parseIntParam(req, "year");    
+        auto monthParam = parseIntParam(req, "month");
             if (req.has_param("year") && !yearParam) {
                 res.status = 400;
                 res.set_content(R"({"error":"invalid year"})", "application/json");
@@ -89,28 +138,29 @@ namespace {
 
             if (yearParam && monthParam) {
                 auto monthly = manager.getTransactionsForMonth(*yearParam, *monthParam);
-                json payload = monthly;
+                json payload = normalizeTransactions(monthly, categories);
                 res.set_content(payload.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
                 return;
             }
 
             if (yearParam) {
                 auto yearly = manager.getTransactionsForYear(*yearParam);
-                json payload = yearly;
+                json payload = normalizeTransactions(yearly, categories);
                 res.set_content(payload.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
                 return;
             }
 
             auto current = getCurrentYearMonth();
             auto monthly = manager.getTransactionsForMonth(current.first, current.second);
-            json payload = monthly;
+            json payload = normalizeTransactions(monthly, categories);
             res.set_content(payload.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
             });
 
-        svr.Post("/api/transactions", [&manager](const httplib::Request& req, httplib::Response& res) {
+        svr.Post("/api/transactions", [&manager, &categories](const httplib::Request& req, httplib::Response& res) {
             try {
                 auto payload = json::parse(req.body);
                 Transaction tx = payload.get<Transaction>();
+                tx.category = categories.normalizeCategory(tx.category);
                 manager.addTransaction(tx);
                 res.status = 201;
                 res.set_content(R"({"status":"ok"})", "application/json");
@@ -122,10 +172,11 @@ namespace {
             }
             });
 
-        svr.Put("/api/transactions", [&manager](const httplib::Request& req, httplib::Response& res) {
+        svr.Put("/api/transactions", [&manager, &categories](const httplib::Request& req, httplib::Response& res) {
             try {
                 auto payload = json::parse(req.body);
                 Transaction tx = payload.get<Transaction>();
+                tx.category = categories.normalizeCategory(tx.category);
                 if (!manager.updateTransaction(tx)) {
                     res.status = 404;
                     res.set_content(R"({"error":"not found"})", "application/json");
@@ -186,7 +237,22 @@ namespace {
             }
             });
 
-        svr.Get("/api/budget", [&budgets](const httplib::Request& req, httplib::Response& res) {
+        svr.Delete("/api/categories", [&categories](const httplib::Request& req, httplib::Response& res) {
+            if (!req.has_param("name")) {
+                res.status = 400;
+                res.set_content(R"({"error":"missing name"})", "application/json");
+                return;
+            }
+            std::string name = req.get_param_value("name");
+            if (!categories.removeCategory(name)) {
+                res.status = 409;
+                res.set_content(R"({"error":"cannot remove category"})", "application/json");
+                return;
+            }
+            res.set_content(R"({"status":"ok"})", "application/json");
+            });
+
+        svr.Get("/api/budget", [&budgets, &categories](const httplib::Request& req, httplib::Response& res) {
             auto yearParam = parseIntParam(req, "year");
             if (!yearParam) {
                 res.status = 400;
@@ -194,10 +260,11 @@ namespace {
                 return;
             }
             json payload = budgets.getBudgetForYear(*yearParam);
+            normalizeBudgetCategories(payload, categories);
             res.set_content(payload.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
             });
 
-        svr.Post("/api/budget", [&budgets](const httplib::Request& req, httplib::Response& res) {
+        svr.Post("/api/budget", [&budgets, &categories](const httplib::Request& req, httplib::Response& res) {
             try {
                 auto payload = json::parse(req.body);
                 int year = payload.value("year", 0);
@@ -206,6 +273,7 @@ namespace {
                     res.set_content(R"({"error":"invalid year"})", "application/json");
                     return;
                 }
+                normalizeBudgetCategories(payload, categories);
                 budgets.upsertBudget(year, payload);
                 res.set_content(R"({"status":"ok"})", "application/json");
             } catch (const std::exception& ex) {
@@ -338,6 +406,7 @@ int main() {
             tx.type = parseTransactionTypeInput(typeValue);
             std::cout << "Category: ";
             std::cin >> tx.category;
+            tx.category = categories.normalizeCategory(tx.category);
             std::cout << "Memo: ";
             //std::cin >> tx.memo;
             std::getline(std::cin >> std::ws, tx.memo);

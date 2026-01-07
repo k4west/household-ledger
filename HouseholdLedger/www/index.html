@@ -135,10 +135,10 @@
         <h5 class="mb-0">필터 & 통계</h5>
       </div>
       <div class="card-body">
-        <div class="row g-3 align-items-end">
-          <div class="col-lg-6">
+        <div class="row g-3 align-items-start filter-row">
+          <div class="col-lg-5">
             <label class="form-label d-block">Type Filter</label>
-            <div class="d-flex flex-wrap gap-3">
+            <div class="d-flex flex-wrap gap-3 filter-type-options">
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="filter-type" id="filter-income" value="income" checked />
                 <label class="form-check-label" for="filter-income">수입</label>
@@ -153,8 +153,13 @@
               </div>
             </div>
           </div>
-          <div class="col-lg-3">
-            <label class="form-label" for="filter-category-chips">Category Filter</label>
+          <div class="col-lg-7">
+            <div class="filter-label-row">
+              <label class="form-label mb-0" for="filter-category-chips">Category Filter</label>
+              <button class="btn btn-sm btn-outline-secondary" type="button" id="filter-category-all">
+                전체 선택
+              </button>
+            </div>
             <div id="filter-category-chips" class="category-chip-group"></div>
           </div>
         </div>
@@ -223,6 +228,9 @@
         <div class="modal-body">
           <label class="form-label" for="new-category-name">새 카테고리</label>
           <input class="form-control" id="new-category-name" type="text" placeholder="예: 교육" />
+          <hr />
+          <h6 class="text-muted mb-2">카테고리 관리</h6>
+          <div id="category-list" class="d-flex flex-column gap-1"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>

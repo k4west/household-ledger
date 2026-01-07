@@ -34,6 +34,11 @@ void CategoryManager::loadFromFile() {
         json payload;
         in >> payload;
         categories_ = payload.get<std::vector<std::string>>();
+        auto it = std::find(categories_.begin(), categories_.end(), "기타");
+        if (it == categories_.end()) {
+            categories_.push_back("기타");
+            saveToFile();
+        }
         return;
     }
     categories_ = { "월급", "식비", "교통", "쇼핑", "주거", "기타" };
@@ -57,4 +62,30 @@ bool CategoryManager::addCategory(const std::string& category) {
     categories_.push_back(category);
     saveToFile();
     return true;
+}
+
+bool CategoryManager::removeCategory(const std::string& category) {
+    std::lock_guard<std::mutex> lock(mtx_);
+    if (category.empty() || category == "기타") {
+        return false;
+    }
+    auto it = std::find(categories_.begin(), categories_.end(), category);
+    if (it == categories_.end()) {
+        return false;
+    }
+    categories_.erase(it);
+    saveToFile();
+    return true;
+}
+
+bool CategoryManager::isCategoryValid(const std::string& category) const {
+    std::lock_guard<std::mutex> lock(mtx_);
+    return std::find(categories_.begin(), categories_.end(), category) != categories_.end();
+}
+
+std::string CategoryManager::normalizeCategory(const std::string& category) const {
+    if (isCategoryValid(category)) {
+        return category;
+    }
+    return "기타";
 }

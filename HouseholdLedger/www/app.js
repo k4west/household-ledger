@@ -30,10 +30,12 @@ const elements = {
   viewMonth: document.getElementById("view-month"),
   viewYear: document.getElementById("view-year"),
   filterCategoryChips: document.getElementById("filter-category-chips"),
+  filterCategoryAll: document.getElementById("filter-category-all"),
   filterTypeInputs: document.querySelectorAll("input[name='filter-type']"),
   addCategoryBtn: document.getElementById("add-category-btn"),
   categoryInput: document.getElementById("new-category-name"),
   saveCategoryBtn: document.getElementById("save-category-btn"),
+  categoryList: document.getElementById("category-list"),
   editModal: document.getElementById("editTransactionModal"),
   editDate: document.getElementById("edit-date"),
   editType: document.getElementById("edit-type"),
@@ -55,6 +57,13 @@ function formatType(type) {
   if (type === "income") return "수입";
   if (type === "transfer") return "저축";
   return "지출";
+}
+
+function normalizeCategory(category) {
+  if (categories.includes(category)) {
+    return category;
+  }
+  return "기타";
 }
 
 function updateMonthLabel() {
@@ -94,6 +103,7 @@ function renderTable(list) {
   list
     .sort((a, b) => b.id - a.id)
     .forEach((tx) => {
+      const category = normalizeCategory(tx.category);
       const row = document.createElement("tr");
       let amountClass = "text-expense";
       if (tx.type === "income") amountClass = "text-income";
@@ -104,7 +114,7 @@ function renderTable(list) {
 
       row.innerHTML = `
         <td>${tx.date || "-"}</td>
-        <td>${tx.category || "-"}</td>
+        <td>${category || "-"}</td>
         <td class="memo-cell">
           <span class="badge bg-light text-dark badge-type me-2">${formatType(tx.type)}</span>
           <button class="btn btn-link p-0 memo-preview ${memoClass}" type="button" data-action="memo" data-id="${tx.id}">
@@ -130,7 +140,7 @@ function buildExpenseChart(list) {
   const expenseTotals = list
     .filter((tx) => tx.type === "expense")
     .reduce((acc, tx) => {
-      const key = tx.category || "기타";
+      const key = normalizeCategory(tx.category);
       acc[key] = (acc[key] || 0) + Number(tx.amount || 0);
       return acc;
     }, {});
@@ -229,7 +239,8 @@ function applyFilters() {
   return transactions.filter((tx) => {
     if (!activeTypeFilters.has(tx.type)) return false;
     if (activeCategoryFilters.size === 0) return false;
-    if (!activeCategoryFilters.has(tx.category)) return false;
+    const category = normalizeCategory(tx.category);
+    if (!activeCategoryFilters.has(category)) return false;
     return true;
   });
 }
@@ -282,6 +293,30 @@ function buildCategoryChips(list) {
   });
 }
 
+function selectAllCategories() {
+  activeCategoryFilters = new Set(categories);
+  buildCategoryChips(categories);
+  renderDashboard();
+}
+
+function buildCategoryList(list) {
+  elements.categoryList.innerHTML = "";
+  list.forEach((category) => {
+    const row = document.createElement("div");
+    row.className = "d-flex justify-content-between align-items-center py-1";
+    row.innerHTML = `
+      <span>${category}</span>
+      <button type="button" class="btn btn-sm btn-outline-danger" data-action="remove-category" data-category="${category}">
+        삭제
+      </button>
+    `;
+    if (category === "기타") {
+      row.querySelector("button").disabled = true;
+    }
+    elements.categoryList.appendChild(row);
+  });
+}
+
 async function fetchCategories() {
   try {
     const response = await fetch(CATEGORIES_ENDPOINT);
@@ -298,6 +333,10 @@ async function fetchCategories() {
       activeCategoryFilters = new Set(categories);
     }
     buildCategoryChips(categories);
+    buildCategoryList(categories);
+    if (elements.filterCategoryAll) {
+      elements.filterCategoryAll.disabled = categories.length === 0;
+    }
   } catch (error) {
     console.error("Failed to fetch categories", error);
   }
@@ -378,7 +417,7 @@ async function deleteTransaction(id) {
 function openEditModal(tx) {
   elements.editDate.value = tx.date;
   elements.editType.value = tx.type;
-  elements.editCategory.value = tx.category;
+  elements.editCategory.value = normalizeCategory(tx.category);
   elements.editMemo.value = tx.memo || "";
   elements.editAmount.value = tx.amount;
   elements.editSaveBtn.dataset.id = tx.id;
@@ -388,11 +427,12 @@ function openEditModal(tx) {
 
 function openMemoModal(tx) {
   memoTransaction = tx;
+  const category = normalizeCategory(tx.category);
   elements.memoTextarea.value = tx.memo || "";
   elements.memoMeta.innerHTML = "";
   const metaItems = [
     `날짜: ${tx.date || "-"}`,
-    `카테고리: ${tx.category || "-"}`,
+    `카테고리: ${category || "-"}`,
     `금액: ${formatAmount(tx.amount)}`,
   ];
   metaItems.forEach((item) => {
@@ -417,6 +457,18 @@ async function addCategory() {
     await fetchCategories();
   } catch (error) {
     console.error("Failed to add category", error);
+  }
+}
+
+async function deleteCategory(name) {
+  try {
+    await fetch(`${CATEGORIES_ENDPOINT}?name=${encodeURIComponent(name)}`, {
+      method: "DELETE",
+    });
+    await fetchCategories();
+    fetchTransactions();
+  } catch (error) {
+    console.error("Failed to delete category", error);
   }
 }
 
@@ -500,12 +552,23 @@ document.addEventListener("DOMContentLoaded", () => {
   elements.filterTypeInputs.forEach((input) => {
     input.addEventListener("change", updateTypeFilters);
   });
+  if (elements.filterCategoryAll) {
+    elements.filterCategoryAll.addEventListener("click", selectAllCategories);
+  }
 
   elements.saveCategoryBtn.addEventListener("click", addCategory);
   elements.addCategoryBtn.addEventListener("click", () => {
     elements.categoryInput.value = "";
     const modal = new bootstrap.Modal(document.getElementById("addCategoryModal"));
     modal.show();
+  });
+  elements.categoryList.addEventListener("click", (event) => {
+    const target = event.target.closest("button");
+    if (!target) return;
+    if (target.dataset.action !== "remove-category") return;
+    const name = target.dataset.category;
+    if (!name) return;
+    deleteCategory(name);
   });
 
   elements.editSaveBtn.addEventListener("click", () => {
@@ -526,7 +589,7 @@ document.addEventListener("DOMContentLoaded", () => {
       id: Number(memoTransaction.id),
       date: memoTransaction.date,
       type: memoTransaction.type,
-      category: memoTransaction.category,
+      category: normalizeCategory(memoTransaction.category),
       memo: elements.memoTextarea.value.trim(),
       amount: Number(memoTransaction.amount),
     };

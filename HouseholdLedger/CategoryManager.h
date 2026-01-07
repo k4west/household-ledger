@@ -18,4 +18,7 @@ public:
     void loadFromFile();
     std::vector<std::string> getCategories() const;
     bool addCategory(const std::string& category);
+    bool removeCategory(const std::string& category);
+    bool isCategoryValid(const std::string& category) const;
+    std::string normalizeCategory(const std::string& category) const;
 };
