@@ -10,13 +10,15 @@
 enum class ScheduleType {
     INCOME,
     EXPENSE,
-    TRANSFER
+    TRANSFER,
+    SAVING
 };
 
 NLOHMANN_JSON_SERIALIZE_ENUM(ScheduleType, {
     {ScheduleType::INCOME, "INCOME"},
     {ScheduleType::EXPENSE, "EXPENSE"},
     {ScheduleType::TRANSFER, "TRANSFER"},
+    {ScheduleType::SAVING, "SAVING"},
 })
 
 struct ScheduleItem {

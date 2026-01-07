@@ -23,7 +23,8 @@ function formatAmount(value) {
 
 function formatType(type) {
   if (type === "INCOME") return "수입";
-  if (type === "TRANSFER") return "저축";
+  if (type === "SAVING") return "저축";
+  if (type === "TRANSFER") return "이체";
   return "지출";
 }
 

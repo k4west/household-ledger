@@ -6,13 +6,15 @@
 enum class TransactionType {
 	INCOME,
 	EXPENSE,
-	TRANSFER
+	TRANSFER,
+	SAVING
 };
 
 NLOHMANN_JSON_SERIALIZE_ENUM(TransactionType, {
 	{TransactionType::INCOME, "income"},
 	{TransactionType::EXPENSE, "expense"},
 	{TransactionType::TRANSFER, "transfer"},
+	{TransactionType::SAVING, "saving"},
 })
 
 struct Transaction {

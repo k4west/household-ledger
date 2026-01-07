@@ -191,6 +191,8 @@ void ScheduleManager::generateDueTransactions(AccountManager& manager) {
             tx.date = dueDate;
             if (item.type == ScheduleType::INCOME) {
                 tx.type = TransactionType::INCOME;
+            } else if (item.type == ScheduleType::SAVING) {
+                tx.type = TransactionType::SAVING;
             } else if (item.type == ScheduleType::TRANSFER) {
                 tx.type = TransactionType::TRANSFER;
             } else {
