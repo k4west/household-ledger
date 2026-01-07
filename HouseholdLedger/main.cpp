@@ -70,17 +70,33 @@ namespace {
         svr.Get("/api/transactions", [&manager](const httplib::Request& req, httplib::Response& res) {
             auto yearParam = parseIntParam(req, "year");
             auto monthParam = parseIntParam(req, "month");
-            int year = 0;
-            int month = 0;
-            if (yearParam && monthParam) {
-                year = *yearParam;
-                month = *monthParam;
-            } else {
-                auto current = getCurrentYearMonth();
-                year = current.first;
-                month = current.second;
+            if (req.has_param("year") && !yearParam) {
+                res.status = 400;
+                res.set_content(R"({"error":"invalid year"})", "application/json");
+                return;
             }
-            auto monthly = manager.getTransactionsForMonth(year, month);
+            if (req.has_param("month") && !monthParam) {
+                res.status = 400;
+                res.set_content(R"({"error":"invalid month"})", "application/json");
+                return;
+            }
+
+            if (yearParam && monthParam) {
+                auto monthly = manager.getTransactionsForMonth(*yearParam, *monthParam);
+                json payload = monthly;
+                res.set_content(payload.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
+                return;
+            }
+
+            if (yearParam) {
+                auto yearly = manager.getTransactionsForYear(*yearParam);
+                json payload = yearly;
+                res.set_content(payload.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
+                return;
+            }
+
+            auto current = getCurrentYearMonth();
+            auto monthly = manager.getTransactionsForMonth(current.first, current.second);
             json payload = monthly;
             res.set_content(payload.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
             });

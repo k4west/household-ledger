@@ -9,7 +9,8 @@ let categories = [];
 let selectedYear = null;
 let selectedMonth = null;
 let activeTypeFilters = new Set(["income", "expense", "transfer"]);
-let activeCategoryFilter = "all";
+let activeCategoryFilters = new Set();
+let isYearView = false;
 
 const elements = {
   list: document.getElementById("transaction-list"),
@@ -25,6 +26,8 @@ const elements = {
   monthLabel: document.getElementById("current-month"),
   prevMonth: document.getElementById("prev-month"),
   nextMonth: document.getElementById("next-month"),
+  viewMonth: document.getElementById("view-month"),
+  viewYear: document.getElementById("view-year"),
   filterCategory: document.getElementById("filter-category"),
   filterTypeInputs: document.querySelectorAll("input[name='filter-type']"),
   addCategoryBtn: document.getElementById("add-category-btn"),
@@ -49,12 +52,10 @@ function formatType(type) {
   return "지출";
 }
 
-function formatMonthLabel(year, month) {
-  return `${year}년 ${month}월`;
-}
-
 function updateMonthLabel() {
-  elements.monthLabel.textContent = formatMonthLabel(selectedYear, selectedMonth);
+  elements.monthLabel.textContent = isYearView
+    ? `${selectedYear}년 전체`
+    : `${selectedYear}년 ${selectedMonth}월`;
 }
 
 function calculateTotals(list) {
@@ -217,9 +218,7 @@ function buildSummaryChart(totals) {
 function applyFilters() {
   return transactions.filter((tx) => {
     if (!activeTypeFilters.has(tx.type)) return false;
-    if (activeCategoryFilter !== "all" && tx.category !== activeCategoryFilter) {
-      return false;
-    }
+    if (activeCategoryFilters.size > 0 && !activeCategoryFilters.has(tx.category)) return false;
     return true;
   });
 }
@@ -263,10 +262,12 @@ async function fetchCategories() {
 
 async function fetchTransactions() {
   try {
-    const monthParam = String(selectedMonth).padStart(2, "0");
-    const response = await fetch(
-      `${TRANSACTIONS_ENDPOINT}?year=${selectedYear}&month=${monthParam}`
-    );
+    let url = `${TRANSACTIONS_ENDPOINT}?year=${selectedYear}`;
+    if (!isYearView) {
+      const monthParam = String(selectedMonth).padStart(2, "0");
+      url += `&month=${monthParam}`;
+    }
+    const response = await fetch(url);
     transactions = await response.json();
     renderDashboard();
   } catch (error) {
@@ -365,7 +366,11 @@ function updateFiltersFromInputs() {
       activeTypeFilters.add(input.value);
     }
   });
-  activeCategoryFilter = elements.filterCategory.value;
+  activeCategoryFilters = new Set(
+    Array.from(elements.filterCategory.selectedOptions)
+      .map((option) => option.value)
+      .filter((value) => value !== "all")
+  );
   renderDashboard();
 }
 
@@ -375,23 +380,48 @@ document.addEventListener("DOMContentLoaded", () => {
   selectedYear = today.getFullYear();
   selectedMonth = today.getMonth() + 1;
   updateMonthLabel();
+  elements.viewMonth.classList.add("active");
 
   elements.prevMonth.addEventListener("click", () => {
-    selectedMonth -= 1;
-    if (selectedMonth === 0) {
-      selectedMonth = 12;
+    if (isYearView) {
       selectedYear -= 1;
+    } else {
+      selectedMonth -= 1;
+      if (selectedMonth === 0) {
+        selectedMonth = 12;
+        selectedYear -= 1;
+      }
     }
     updateMonthLabel();
     fetchTransactions();
   });
 
   elements.nextMonth.addEventListener("click", () => {
-    selectedMonth += 1;
-    if (selectedMonth === 13) {
-      selectedMonth = 1;
+    if (isYearView) {
       selectedYear += 1;
+    } else {
+      selectedMonth += 1;
+      if (selectedMonth === 13) {
+        selectedMonth = 1;
+        selectedYear += 1;
+      }
     }
+    updateMonthLabel();
+    fetchTransactions();
+  });
+
+  elements.viewMonth.addEventListener("click", () => {
+    isYearView = false;
+    elements.viewMonth.classList.add("active");
+    elements.viewYear.classList.remove("active");
+    updateMonthLabel();
+    fetchTransactions();
+  });
+
+  elements.viewYear.addEventListener("click", () => {
+    isYearView = true;
+    elements.viewYear.classList.add("active");
+    elements.viewMonth.classList.remove("active");
     updateMonthLabel();
     fetchTransactions();
   });

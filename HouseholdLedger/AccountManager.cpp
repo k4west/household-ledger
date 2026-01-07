@@ -25,6 +25,23 @@ std::filesystem::path AccountManager::ledgerFilePath(int year, int month) const 
     return dataDir() / filename.str();
 }
 
+bool AccountManager::parseYearMonthFromFilename(const std::filesystem::path& path, int& year, int& month) const {
+    auto name = path.filename().string();
+    if (name.rfind("ledger_", 0) != 0 || path.extension() != ".json") {
+        return false;
+    }
+    if (name.size() < 15) {
+        return false;
+    }
+    try {
+        year = std::stoi(name.substr(7, 4));
+        month = std::stoi(name.substr(12, 2));
+    } catch (const std::exception&) {
+        return false;
+    }
+    return year > 0 && month >= 1 && month <= 12;
+}
+
 std::vector<Transaction> AccountManager::readLedgerFile(const std::filesystem::path& path) const {
     std::ifstream in(path);
     if (!in.is_open()) {
@@ -75,6 +92,24 @@ bool AccountManager::parseYearMonth(const std::string& date, int& year, int& mon
 std::vector<Transaction> AccountManager::getTransactionsForMonth(int year, int month) {
     std::lock_guard<std::mutex> lock(mtx_);
     return readLedgerFile(ledgerFilePath(year, month));
+}
+
+std::vector<Transaction> AccountManager::getTransactionsForYear(int year) {
+    std::lock_guard<std::mutex> lock(mtx_);
+    std::vector<Transaction> all;
+    for (const auto& file : listLedgerFiles()) {
+        int fileYear = 0;
+        int fileMonth = 0;
+        if (!parseYearMonthFromFilename(file, fileYear, fileMonth)) {
+            continue;
+        }
+        if (fileYear != year) {
+            continue;
+        }
+        auto ledger = readLedgerFile(file);
+        all.insert(all.end(), ledger.begin(), ledger.end());
+    }
+    return all;
 }
 
 std::vector<Transaction> AccountManager::getAllTransactions() {

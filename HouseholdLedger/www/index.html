@@ -27,14 +27,20 @@
 
   <main class="container pb-5">
     <section class="card mb-4 shadow-sm">
-      <div class="card-body d-flex justify-content-between align-items-center month-nav">
+      <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3 month-nav">
         <button class="btn btn-outline-secondary" id="prev-month">
           <i class="fa-solid fa-chevron-left"></i>
         </button>
         <h5 class="mb-0 fw-semibold" id="current-month"></h5>
-        <button class="btn btn-outline-secondary" id="next-month">
-          <i class="fa-solid fa-chevron-right"></i>
-        </button>
+        <div class="d-flex align-items-center gap-2">
+          <div class="btn-group" role="group" aria-label="View toggle">
+            <button class="btn btn-outline-primary" id="view-month">월별</button>
+            <button class="btn btn-outline-primary" id="view-year">연도별</button>
+          </div>
+          <button class="btn btn-outline-secondary" id="next-month">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
       </div>
     </section>
 
@@ -142,7 +148,7 @@
           </div>
           <div class="col-lg-3">
             <label class="form-label" for="filter-category">Category Filter</label>
-            <select class="form-select" id="filter-category"></select>
+            <select class="form-select" id="filter-category" multiple size="4"></select>
           </div>
         </div>
         <div class="row g-4 mt-2">
