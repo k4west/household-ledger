@@ -23,7 +23,7 @@ namespace {
         svr.Get("/api/transactions", [&manager](const httplib::Request&, httplib::Response& res) {
             auto all = manager.getAllTransactions();
             json payload = all;
-            res.set_content(payload.dump(2), "application/json");
+            res.set_content(payload.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
             });
 
         svr.Post("/api/transactions", [&manager](const httplib::Request& req, httplib::Response& res) {
@@ -37,7 +37,7 @@ namespace {
             catch (const std::exception& ex) {
                 json err{ {"error", ex.what()} };
                 res.status = 400;
-                res.set_content(err.dump(2), "application/json");
+                res.set_content(err.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
             }
             });
 
@@ -89,8 +89,8 @@ int main() {
     register_routes(svr, manager);
 
     std::thread server([&svr]() {
-        std::cout << "Server listening on http://localhost:8080\n";
-        svr.listen("0.0.0.0", 8080);
+        std::cout << "\nServer listening on http://localhost:8888\n";
+        svr.listen("0.0.0.0", 8888);
         });
 
     bool running = true;
@@ -122,7 +122,8 @@ int main() {
             std::cout << "Category: ";
             std::cin >> tx.category;
             std::cout << "Memo: ";
-            std::cin >> tx.memo;
+            //std::cin >> tx.memo;
+            std::getline(std::cin >> std::ws, tx.memo);
             std::cout << "Amount: ";
             std::cin >> tx.amount;
             manager.addTransaction(tx);

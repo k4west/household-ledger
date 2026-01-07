@@ -44,7 +44,7 @@ public:
         ensureDataDir();
         json payload = ledger_;
         std::ofstream out(dataFilePath());
-        out << payload.dump(2);
+        out << payload.dump(2, ' ', false, json::error_handler_t::replace);
     }
 
     void addTransaction(const Transaction& transaction) {
