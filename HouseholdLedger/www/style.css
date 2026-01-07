@@ -1,0 +1,51 @@
+body {
+  font-family: "Inter", "Segoe UI", sans-serif;
+}
+
+.logo-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4e73df, #36b9cc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+
+.summary-card {
+  border: none;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06);
+}
+
+.text-income {
+  color: #1e88e5;
+}
+
+.text-expense {
+  color: #e53935;
+}
+
+.ledger-table {
+  overflow-x: auto;
+}
+
+.table td,
+.table th {
+  vertical-align: middle;
+}
+
+.badge-type {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.chart-empty {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9aa0a6;
+  font-size: 0.95rem;
+}
