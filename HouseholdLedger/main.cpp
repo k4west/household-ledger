@@ -118,7 +118,7 @@ namespace {
                 expenses.erase(category);
             }
             if (otherTotal > 0) {
-                expenses["±âÅ¸"] = expenses.value("±âÅ¸", 0) + otherTotal;
+                expenses["기타"] = expenses.value("기타", 0) + otherTotal;
             }
         }
     }
