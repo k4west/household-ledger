@@ -73,6 +73,9 @@ function renderSchedules() {
     .forEach((item) => {
       const row = document.createElement("tr");
       const period = `${item.startDate || "-"} ~ ${item.endDate || "진행 중"}`;
+      const isEnded = Boolean(item.endDate && item.endDate.trim());
+      const actionLabel = isEnded ? "삭제" : "종료";
+      const actionType = isEnded ? "delete" : "end";
       row.innerHTML = `
         <td>${item.name}</td>
         <td>${formatType(item.type)}</td>
@@ -84,8 +87,8 @@ function renderSchedules() {
           <button class="btn btn-sm btn-outline-secondary me-2" data-action="duplicate" data-id="${item.id}">
             복제
           </button>
-          <button class="btn btn-sm btn-outline-danger" data-action="end" data-id="${item.id}">
-            종료
+          <button class="btn btn-sm btn-outline-danger" data-action="${actionType}" data-id="${item.id}">
+            ${actionLabel}
           </button>
         </td>
       `;
@@ -118,6 +121,13 @@ async function updateSchedule(payload) {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  });
+  await fetchSchedules();
+}
+
+async function deleteSchedule(id) {
+  await fetch(`${SCHEDULES_ENDPOINT}?id=${id}`, {
+    method: "DELETE",
   });
   await fetchSchedules();
 }
@@ -185,6 +195,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const action = target.dataset.action;
     if (action === "end") {
       handleEndSchedule(id);
+    } else if (action === "delete") {
+      deleteSchedule(id);
     } else if (action === "duplicate") {
       handleDuplicateSchedule(id);
     }

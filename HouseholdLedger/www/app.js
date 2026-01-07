@@ -537,10 +537,12 @@ async function updateCategoryAttribute(name, attribute) {
 
 async function fetchRpgStatus() {
   try {
-    const monthParam = String(selectedMonth).padStart(2, "0");
-    const response = await fetch(
-      `${RPG_ENDPOINT}?year=${selectedYear}&month=${monthParam}`
-    );
+    let url = `${RPG_ENDPOINT}?year=${selectedYear}`;
+    if (!isYearView) {
+      const monthParam = String(selectedMonth).padStart(2, "0");
+      url += `&month=${monthParam}`;
+    }
+    const response = await fetch(url);
     const payload = await response.json();
     renderRpgStatus(payload);
   } catch (error) {
