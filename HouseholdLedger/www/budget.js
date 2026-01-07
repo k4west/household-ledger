@@ -137,7 +137,7 @@ function renderSummary() {
     .filter((tx) => tx.type === "expense")
     .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
   const savingsTotal = transactions
-    .filter((tx) => tx.type === "transfer")
+    .filter((tx) => tx.type === "saving")
     .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
   const monthKey = getCurrentMonthKey();
   const currentMonthBudget = budgetData.monthly?.[monthKey]?.expenses
@@ -210,7 +210,7 @@ function buildGaugeChart() {
   const annualGoals = budgetData.annual_goals || {};
   const annualSavingsGoal = Number(annualGoals.total_savings || 0);
   const savingsTotal = transactions
-    .filter((tx) => tx.type === "transfer")
+    .filter((tx) => tx.type === "saving")
     .reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
   const remaining = Math.max(annualSavingsGoal - savingsTotal, 0);
 

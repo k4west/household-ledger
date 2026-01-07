@@ -1,14 +1,17 @@
 const API_BASE = "http://localhost:8888/api";
 const TRANSACTIONS_ENDPOINT = `${API_BASE}/transactions`;
 const CATEGORIES_ENDPOINT = `${API_BASE}/categories`;
+const CATEGORY_ATTRIBUTES_ENDPOINT = `${API_BASE}/category-attributes`;
+const RPG_ENDPOINT = `${API_BASE}/rpg`;
 
 let expenseChart = null;
 let summaryChart = null;
 let transactions = [];
 let categories = [];
+let categoryAttributes = {};
 let selectedYear = null;
 let selectedMonth = null;
-let activeTypeFilters = new Set(["income", "expense", "transfer"]);
+let activeTypeFilters = new Set(["income", "expense", "saving", "transfer"]);
 let activeCategoryFilters = new Set();
 let isYearView = false;
 let memoTransaction = null;
@@ -17,7 +20,7 @@ const elements = {
   list: document.getElementById("transaction-list"),
   totalIncome: document.getElementById("total-income"),
   totalExpense: document.getElementById("total-expense"),
-  totalTransfer: document.getElementById("total-transfer"),
+  totalSaving: document.getElementById("total-saving"),
   remainingBudget: document.getElementById("remaining-budget"),
   date: document.getElementById("tx-date"),
   type: document.getElementById("tx-type"),
@@ -34,8 +37,15 @@ const elements = {
   filterTypeInputs: document.querySelectorAll("input[name='filter-type']"),
   addCategoryBtn: document.getElementById("add-category-btn"),
   categoryInput: document.getElementById("new-category-name"),
+  categoryAttribute: document.getElementById("new-category-attribute"),
   saveCategoryBtn: document.getElementById("save-category-btn"),
   categoryList: document.getElementById("category-list"),
+  rpgLevel: document.getElementById("rpg-level"),
+  rpgExp: document.getElementById("rpg-exp"),
+  rpgHp: document.getElementById("rpg-hp"),
+  rpgHpBar: document.getElementById("rpg-hp-bar"),
+  rpgMultiplier: document.getElementById("rpg-multiplier"),
+  rpgRoles: document.getElementById("rpg-roles"),
   editModal: document.getElementById("editTransactionModal"),
   editDate: document.getElementById("edit-date"),
   editType: document.getElementById("edit-type"),
@@ -55,7 +65,8 @@ function formatAmount(value) {
 
 function formatType(type) {
   if (type === "income") return "수입";
-  if (type === "transfer") return "저축";
+  if (type === "saving") return "저축";
+  if (type === "transfer") return "이체";
   return "지출";
 }
 
@@ -79,21 +90,23 @@ function calculateTotals(list) {
         acc.income += Number(tx.amount || 0);
       } else if (tx.type === "expense") {
         acc.expense += Number(tx.amount || 0);
+      } else if (tx.type === "saving") {
+        acc.saving += Number(tx.amount || 0);
       } else if (tx.type === "transfer") {
         acc.transfer += Number(tx.amount || 0);
       }
       return acc;
     },
-    { income: 0, expense: 0, transfer: 0 }
+    { income: 0, expense: 0, saving: 0, transfer: 0 }
   );
 }
 
 function renderSummary(totals) {
   elements.totalIncome.textContent = formatAmount(totals.income);
   elements.totalExpense.textContent = formatAmount(totals.expense);
-  elements.totalTransfer.textContent = formatAmount(totals.transfer);
+  elements.totalSaving.textContent = formatAmount(totals.saving);
   elements.remainingBudget.textContent = formatAmount(
-    totals.income - totals.expense - totals.transfer
+    totals.income - totals.expense - totals.saving
   );
 }
 
@@ -107,6 +120,7 @@ function renderTable(list) {
       const row = document.createElement("tr");
       let amountClass = "text-expense";
       if (tx.type === "income") amountClass = "text-income";
+      if (tx.type === "saving") amountClass = "text-saving";
       if (tx.type === "transfer") amountClass = "text-transfer";
       const memoValue = (tx.memo || "").trim();
       const memoText = memoValue || "메모 추가";
@@ -202,7 +216,7 @@ function buildExpenseChart(list) {
 
 function buildSummaryChart(totals) {
   const labels = ["수입", "지출", "저축"];
-  const data = [totals.income, totals.expense, totals.transfer];
+  const data = [totals.income, totals.expense, totals.saving];
 
   if (!summaryChart) {
     const ctx = document.getElementById("summaryChart");
@@ -302,16 +316,26 @@ function selectAllCategories() {
 function buildCategoryList(list) {
   elements.categoryList.innerHTML = "";
   list.forEach((category) => {
+    const attribute = categoryAttributes[category] || "consumption";
     const row = document.createElement("div");
-    row.className = "d-flex justify-content-between align-items-center py-1";
+    row.className = "d-flex justify-content-between align-items-center py-1 gap-2";
     row.innerHTML = `
       <span>${category}</span>
-      <button type="button" class="btn btn-sm btn-outline-danger" data-action="remove-category" data-category="${category}">
-        삭제
-      </button>
+      <div class="d-flex align-items-center gap-2">
+        <select class="form-select form-select-sm" data-action="update-attribute" data-category="${category}">
+          <option value="consumption">소비형</option>
+          <option value="saving">저축형</option>
+        </select>
+        <button type="button" class="btn btn-sm btn-outline-danger" data-action="remove-category" data-category="${category}">
+          삭제
+        </button>
+      </div>
     `;
+    const attributeSelect = row.querySelector("select");
+    attributeSelect.value = attribute;
     if (category === "기타") {
       row.querySelector("button").disabled = true;
+      attributeSelect.disabled = true;
     }
     elements.categoryList.appendChild(row);
   });
@@ -321,6 +345,7 @@ async function fetchCategories() {
   try {
     const response = await fetch(CATEGORIES_ENDPOINT);
     categories = await response.json();
+    await fetchCategoryAttributes();
     buildCategoryOptions(elements.category, categories);
     buildCategoryOptions(elements.editCategory, categories);
     const previousSelections = new Set(activeCategoryFilters);
@@ -342,6 +367,16 @@ async function fetchCategories() {
   }
 }
 
+async function fetchCategoryAttributes() {
+  try {
+    const response = await fetch(CATEGORY_ATTRIBUTES_ENDPOINT);
+    categoryAttributes = await response.json();
+  } catch (error) {
+    console.error("Failed to fetch category attributes", error);
+    categoryAttributes = {};
+  }
+}
+
 async function fetchTransactions() {
   try {
     let url = `${TRANSACTIONS_ENDPOINT}?year=${selectedYear}`;
@@ -352,6 +387,7 @@ async function fetchTransactions() {
     const response = await fetch(url);
     transactions = await response.json();
     renderDashboard();
+    fetchRpgStatus();
   } catch (error) {
     console.error("Failed to fetch transactions", error);
   }
@@ -451,9 +487,13 @@ async function addCategory() {
     await fetch(CATEGORIES_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({
+        name,
+        attribute: elements.categoryAttribute.value,
+      }),
     });
     elements.categoryInput.value = "";
+    elements.categoryAttribute.value = "consumption";
     await fetchCategories();
   } catch (error) {
     console.error("Failed to add category", error);
@@ -480,6 +520,61 @@ function updateTypeFilters() {
     }
   });
   renderDashboard();
+}
+
+async function updateCategoryAttribute(name, attribute) {
+  try {
+    await fetch(CATEGORY_ATTRIBUTES_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, attribute }),
+    });
+    categoryAttributes[name] = attribute;
+  } catch (error) {
+    console.error("Failed to update category attribute", error);
+  }
+}
+
+async function fetchRpgStatus() {
+  try {
+    const monthParam = String(selectedMonth).padStart(2, "0");
+    const response = await fetch(
+      `${RPG_ENDPOINT}?year=${selectedYear}&month=${monthParam}`
+    );
+    const payload = await response.json();
+    renderRpgStatus(payload);
+  } catch (error) {
+    console.error("Failed to fetch RPG status", error);
+  }
+}
+
+function renderRpgStatus(payload) {
+  if (!payload || typeof payload !== "object") return;
+  const level = payload.level ?? 1;
+  const totalExp = payload.total_exp ?? 0;
+  const hp = payload.party_hp ?? 100;
+  const multiplier = payload.total_multiplier ?? 1;
+  const roles = payload.roles || {};
+
+  elements.rpgLevel.textContent = `Lv. ${level}`;
+  elements.rpgExp.textContent = totalExp.toFixed(2);
+  elements.rpgHp.textContent = `${hp.toFixed(1)} / 100`;
+  elements.rpgHpBar.style.width = `${Math.min(hp, 100)}%`;
+  elements.rpgMultiplier.textContent = `${multiplier.toFixed(2)}x`;
+
+  elements.rpgRoles.innerHTML = "";
+  const roleItems = [
+    ["HUNTER", roles.hunter || 0],
+    ["GUARDIAN", roles.guardian || 0],
+    ["CLERIC", roles.cleric || 0],
+    ["GREMLIN", roles.gremlin || 0],
+  ];
+  roleItems.forEach(([role, count]) => {
+    const span = document.createElement("span");
+    span.className = "badge text-bg-light";
+    span.textContent = `${role}: ${count}`;
+    elements.rpgRoles.appendChild(span);
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -559,6 +654,7 @@ document.addEventListener("DOMContentLoaded", () => {
   elements.saveCategoryBtn.addEventListener("click", addCategory);
   elements.addCategoryBtn.addEventListener("click", () => {
     elements.categoryInput.value = "";
+    elements.categoryAttribute.value = "consumption";
     const modal = new bootstrap.Modal(document.getElementById("addCategoryModal"));
     modal.show();
   });
@@ -569,6 +665,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const name = target.dataset.category;
     if (!name) return;
     deleteCategory(name);
+  });
+  elements.categoryList.addEventListener("change", (event) => {
+    const target = event.target;
+    if (!target || target.dataset.action !== "update-attribute") return;
+    const name = target.dataset.category;
+    const attribute = target.value;
+    if (!name) return;
+    updateCategoryAttribute(name, attribute);
   });
 
   elements.editSaveBtn.addEventListener("click", () => {

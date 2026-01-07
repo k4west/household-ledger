@@ -1,6 +1,9 @@
 #include <chrono>
 #include <ctime>
+#include <cmath>
+#include <algorithm>
 #include <iostream>
+#include <unordered_map>
 #include <limits>
 #include <optional>
 #include <string>
@@ -49,6 +52,9 @@ namespace {
         if (value == "income") {
             return TransactionType::INCOME;
         }
+        if (value == "saving") {
+            return TransactionType::SAVING;
+        }
         if (value == "transfer") {
             return TransactionType::TRANSFER;
         }
@@ -59,6 +65,8 @@ namespace {
         switch (type) {
         case TransactionType::INCOME:
             return "income";
+        case TransactionType::SAVING:
+            return "saving";
         case TransactionType::TRANSFER:
             return "transfer";
         default:
@@ -110,7 +118,164 @@ namespace {
                 expenses.erase(category);
             }
             if (otherTotal > 0) {
-                expenses["��Ÿ"] = expenses.value("��Ÿ", 0) + otherTotal;
+
+    struct RpgSummary {
+        long long income{};
+        long long expense{};
+        long long saving{};
+        long long budgetTotal{};
+        long long savingGoal{};
+        double goalMultiplier{ 1.0 };
+        double spendBonus{ 1.0 };
+        double saveBonus{ 1.0 };
+        double totalMultiplier{ 1.0 };
+        double totalExp{};
+        int level{ 1 };
+        double partyHp{ 100.0 };
+        int hunterCount{};
+        int guardianCount{};
+        int clericCount{};
+        int gremlinCount{};
+        int gremlinLevel{};
+    };
+
+    double clampDouble(double value, double minValue, double maxValue) {
+        if (value < minValue) {
+            return minValue;
+        }
+        if (value > maxValue) {
+            return maxValue;
+        }
+        return value;
+    }
+
+    long long getBudgetValue(const json& monthBudget, const std::string& category) {
+        if (!monthBudget.is_object() || !monthBudget.contains("expenses")) {
+            return 0;
+        }
+        const auto& expenses = monthBudget.at("expenses");
+        if (!expenses.is_object() || !expenses.contains(category)) {
+            return 0;
+        }
+        return expenses.at(category).get<long long>();
+    }
+
+    RpgSummary computeRpgSummary(std::vector<Transaction> transactions,
+                                 const json& budgetYear,
+                                 int year,
+                                 int month,
+                                 const CategoryManager& categories) {
+        RpgSummary summary{};
+        std::string monthKey = month < 10 ? "0" + std::to_string(month) : std::to_string(month);
+        json monthBudget = json::object();
+        if (budgetYear.contains("monthly") && budgetYear.at("monthly").contains(monthKey)) {
+            monthBudget = budgetYear.at("monthly").at(monthKey);
+        }
+
+        if (monthBudget.contains("expenses") && monthBudget.at("expenses").is_object()) {
+            for (const auto& [category, amount] : monthBudget.at("expenses").items()) {
+                const auto value = amount.get<long long>();
+                if (categories.isSavingCategory(category)) {
+                    summary.savingGoal += value;
+                } else {
+                    summary.budgetTotal += value;
+                }
+            }
+        }
+
+        for (const auto& tx : transactions) {
+            if (tx.type == TransactionType::INCOME) {
+                summary.income += tx.amount;
+            } else if (tx.type == TransactionType::EXPENSE) {
+                summary.expense += tx.amount;
+            } else if (tx.type == TransactionType::SAVING) {
+                summary.saving += tx.amount;
+            }
+        }
+
+        double spendTight = 0.0;
+        double saveTight = 0.0;
+        if (summary.income > 0) {
+            spendTight = clampDouble((0.90 - (static_cast<double>(summary.budgetTotal) / summary.income)) / 0.30, 0.0, 1.0);
+            saveTight = clampDouble((static_cast<double>(summary.savingGoal) / summary.income) / 0.30, 0.0, 1.0);
+        }
+        summary.goalMultiplier = 1.0 + 0.10 * spendTight + 0.10 * saveTight;
+        if (summary.budgetTotal > 0) {
+            summary.spendBonus = summary.expense <= summary.budgetTotal ? 1.1 : 1.0;
+        }
+        if (summary.savingGoal > 0) {
+            double saveAch = static_cast<double>(summary.saving) / summary.savingGoal;
+            summary.saveBonus = 1.0 + 0.15 * clampDouble(saveAch, 0.0, 1.0);
+        }
+        summary.totalMultiplier = std::min(summary.goalMultiplier * summary.spendBonus * summary.saveBonus, 1.5);
+
+        std::sort(transactions.begin(), transactions.end(), [](const Transaction& a, const Transaction& b) {
+            if (a.date == b.date) {
+                return a.id < b.id;
+            }
+            return a.date < b.date;
+        });
+
+        std::unordered_map<std::string, long long> categorySpent;
+        double partyHp = 100.0;
+        int gremlinLevel = 0;
+        double scale = std::max(static_cast<double>(summary.income) / 100.0, 10000.0);
+
+        for (const auto& tx : transactions) {
+            if (tx.type == TransactionType::TRANSFER) {
+                continue;
+            }
+            double multiplier = partyHp <= 0 ? 1.0 : summary.totalMultiplier;
+            double baseLogExp = std::log(1.0 + (scale > 0 ? tx.amount / scale : 0.0));
+            if (tx.type == TransactionType::INCOME) {
+                summary.hunterCount += 1;
+                summary.totalExp += 120.0 * baseLogExp * multiplier;
+                continue;
+            }
+            if (tx.type == TransactionType::SAVING) {
+                summary.guardianCount += 1;
+                summary.totalExp += 150.0 * baseLogExp * multiplier;
+                continue;
+            }
+            if (tx.type != TransactionType::EXPENSE) {
+                continue;
+            }
+
+            const std::string category = categories.normalizeCategory(tx.category);
+            const long long budgetLimit = getBudgetValue(monthBudget, category);
+            auto& spent = categorySpent[category];
+            spent += tx.amount;
+            const bool overBudget = budgetLimit <= 0 || spent > budgetLimit;
+
+            if (!overBudget) {
+                summary.clericCount += 1;
+                summary.totalExp += 80.0 * baseLogExp * multiplier;
+                if (summary.budgetTotal > 0) {
+                    double damage = (tx.amount / static_cast<double>(summary.budgetTotal)) * 100.0 * 0.5;
+                    partyHp -= damage;
+                }
+            } else {
+                summary.gremlinCount += 1;
+                summary.totalExp += 260.0 * baseLogExp * multiplier;
+                gremlinLevel += 1;
+                if (summary.budgetTotal > 0) {
+                    double damage = (tx.amount / static_cast<double>(summary.budgetTotal)) * 100.0 * 1.5;
+                    partyHp -= damage;
+                }
+                partyHp -= gremlinLevel * 0.5;
+            }
+            if (partyHp < 0) {
+                partyHp = 0;
+            }
+        }
+
+        summary.partyHp = partyHp;
+        summary.gremlinLevel = gremlinLevel;
+        summary.level = static_cast<int>(summary.totalExp / 100.0) + 1;
+        return summary;
+    }
+
+                expenses["±âÅ¸"] = expenses.value("±âÅ¸", 0) + otherTotal;
             }
         }
     }
@@ -223,7 +388,14 @@ namespace {
             try {
                 auto payload = json::parse(req.body);
                 std::string name = payload.value("name", "");
-                if (!categories.addCategory(name)) {
+                std::string attributeValue = payload.value("attribute", "consumption");
+                CategoryManager::CategoryAttribute attribute{};
+                if (!CategoryManager::tryParseAttribute(attributeValue, attribute)) {
+                    res.status = 400;
+                    res.set_content(R"({"error":"invalid attribute"})", "application/json");
+                    return;
+                }
+                if (!categories.addCategory(name, attribute)) {
                     res.status = 409;
                     res.set_content(R"({"error":"duplicate or invalid category"})", "application/json");
                     return;
@@ -251,6 +423,43 @@ namespace {
             }
             res.set_content(R"({"status":"ok"})", "application/json");
             });
+        svr.Get("/api/category-attributes", [&categories](const httplib::Request&, httplib::Response& res) {
+            json payload = json::object();
+            for (const auto& [name, attribute] : categories.getCategoryAttributes()) {
+                payload[name] = CategoryManager::attributeToString(attribute);
+            }
+            res.set_content(payload.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
+            });
+
+        svr.Post("/api/category-attributes", [&categories](const httplib::Request& req, httplib::Response& res) {
+            try {
+                auto payload = json::parse(req.body);
+                std::string name = payload.value("name", "");
+                std::string attributeValue = payload.value("attribute", "");
+                if (name.empty()) {
+                    res.status = 400;
+                    res.set_content(R"({"error":"missing name"})", "application/json");
+                    return;
+                }
+                CategoryManager::CategoryAttribute attribute{};
+                if (!CategoryManager::tryParseAttribute(attributeValue, attribute)) {
+                    res.status = 400;
+                    res.set_content(R"({"error":"invalid attribute"})", "application/json");
+                    return;
+                }
+                if (!categories.setCategoryAttribute(name, attribute)) {
+                    res.status = 404;
+                    res.set_content(R"({"error":"not found"})", "application/json");
+                    return;
+                }
+                res.set_content(R"({"status":"ok"})", "application/json");
+            } catch (const std::exception& ex) {
+                json err{ {"error", ex.what()} };
+                res.status = 400;
+                res.set_content(err.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
+            }
+            });
+
 
         svr.Get("/api/budget", [&budgets, &categories](const httplib::Request& req, httplib::Response& res) {
             auto yearParam = parseIntParam(req, "year");
@@ -263,6 +472,54 @@ namespace {
             normalizeBudgetCategories(payload, categories);
             res.set_content(payload.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
             });
+        svr.Get("/api/rpg", [&manager, &budgets, &categories](const httplib::Request& req, httplib::Response& res) {
+            auto yearParam = parseIntParam(req, "year");
+            auto monthParam = parseIntParam(req, "month");
+            if (req.has_param("year") && !yearParam) {
+                res.status = 400;
+                res.set_content(R"({"error":"invalid year"})", "application/json");
+                return;
+            }
+            if (req.has_param("month") && !monthParam) {
+                res.status = 400;
+                res.set_content(R"({"error":"invalid month"})", "application/json");
+                return;
+            }
+
+            auto current = getCurrentYearMonth();
+            int year = yearParam.value_or(current.first);
+            int month = monthParam.value_or(current.second);
+
+            auto monthly = manager.getTransactionsForMonth(year, month);
+            auto budgetYear = budgets.getBudgetForYear(year);
+            auto summary = computeRpgSummary(normalizeTransactions(monthly, categories), budgetYear, year, month, categories);
+
+            json payload{
+                {"year", year},
+                {"month", month},
+                {"income", summary.income},
+                {"expense", summary.expense},
+                {"saving", summary.saving},
+                {"budget", summary.budgetTotal},
+                {"saving_goal", summary.savingGoal},
+                {"goal_multiplier", summary.goalMultiplier},
+                {"spend_bonus", summary.spendBonus},
+                {"save_bonus", summary.saveBonus},
+                {"total_multiplier", summary.totalMultiplier},
+                {"total_exp", summary.totalExp},
+                {"level", summary.level},
+                {"party_hp", summary.partyHp},
+                {"roles", {
+                    {"hunter", summary.hunterCount},
+                    {"guardian", summary.guardianCount},
+                    {"cleric", summary.clericCount},
+                    {"gremlin", summary.gremlinCount}
+                }},
+                {"gremlin_level", summary.gremlinLevel}
+            };
+            res.set_content(payload.dump(2, ' ', false, json::error_handler_t::replace), "application/json");
+            });
+
 
         svr.Post("/api/budget", [&budgets, &categories](const httplib::Request& req, httplib::Response& res) {
             try {
@@ -400,7 +657,7 @@ int main() {
             tx.id = generateId();
             std::cout << "Date (YYYY-MM-DD): ";
             std::cin >> tx.date;
-            std::cout << "Type (income/expense/transfer): ";
+            std::cout << "Type (income/expense/saving/transfer): ";
             std::string typeValue;
             std::cin >> typeValue;
             tx.type = parseTransactionTypeInput(typeValue);

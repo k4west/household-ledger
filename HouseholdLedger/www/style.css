@@ -26,8 +26,12 @@ body {
   color: #e53935;
 }
 
-.text-transfer {
+.text-saving {
   color: #43a047;
+}
+
+.text-transfer {
+  color: #8d6e63;
 }
 
 .ledger-table {
