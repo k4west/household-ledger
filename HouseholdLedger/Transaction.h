@@ -3,10 +3,22 @@
 #include <string>
 #include "json.hpp"
 
+enum class TransactionType {
+	INCOME,
+	EXPENSE,
+	TRANSFER
+};
+
+NLOHMANN_JSON_SERIALIZE_ENUM(TransactionType, {
+	{TransactionType::INCOME, "income"},
+	{TransactionType::EXPENSE, "expense"},
+	{TransactionType::TRANSFER, "transfer"},
+})
+
 struct Transaction {
 	long long id{};
 	std::string date;
-	std::string type;
+	TransactionType type{ TransactionType::EXPENSE };
 	std::string category;
 	std::string memo;
 	long long amount{};
