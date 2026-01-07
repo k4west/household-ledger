@@ -118,6 +118,10 @@ namespace {
                 expenses.erase(category);
             }
             if (otherTotal > 0) {
+                expenses["±âÅ¸"] = expenses.value("±âÅ¸", 0) + otherTotal;
+            }
+        }
+    }
 
     struct RpgSummary {
         long long income{};
@@ -273,11 +277,6 @@ namespace {
         summary.gremlinLevel = gremlinLevel;
         summary.level = static_cast<int>(summary.totalExp / 100.0) + 1;
         return summary;
-    }
-
-                expenses["±âÅ¸"] = expenses.value("±âÅ¸", 0) + otherTotal;
-            }
-        }
     }
     
     void register_routes(httplib::Server& svr,
