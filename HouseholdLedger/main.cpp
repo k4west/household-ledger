@@ -122,7 +122,7 @@ namespace {
                          ScheduleManager& schedules) {
         svr.set_default_headers({ {"Access-Control-Allow-Origin", "*"} });
 
-        svr.Get("/api/transactions", [&manager, &categories](const httplib::Request& req, httplib::Response& res) {            auto yearParam = parseIntParam(req, "year");
+        svr.Get("/api/transactions", [&manager, &categories](const httplib::Request& req, httplib::Response& res) {
         auto yearParam = parseIntParam(req, "year");    
         auto monthParam = parseIntParam(req, "month");
             if (req.has_param("year") && !yearParam) {
