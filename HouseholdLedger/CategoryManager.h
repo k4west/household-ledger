@@ -12,7 +12,7 @@ private:
     std::filesystem::path dataFilePath() const;
     void saveToFile() const;
     std::vector<std::string> categories_;
-    std::mutex mtx_;
+    mutable std::mutex mtx_;
 
 public:
     void loadFromFile();
