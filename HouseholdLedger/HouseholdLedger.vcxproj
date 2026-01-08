@@ -129,16 +129,24 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AccountManager.cpp" />
+    <ClCompile Include="ApiServer.cpp" />
     <ClCompile Include="BudgetManager.cpp" />
     <ClCompile Include="CategoryManager.cpp" />
+    <ClCompile Include="ConsoleUi.cpp" />
+    <ClCompile Include="RpgService.cpp" />
     <ClCompile Include="ScheduleManager.cpp" />
+    <ClCompile Include="Utils.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccountManager.h" />
+    <ClInclude Include="ApiServer.h" />
     <ClInclude Include="BudgetManager.h" />
     <ClInclude Include="CategoryManager.h" />
+    <ClInclude Include="ConsoleUi.h" />
+    <ClInclude Include="RpgService.h" />
     <ClInclude Include="ScheduleManager.h" />
+    <ClInclude Include="Utils.h" />
     <ClInclude Include="httplib.h" />
     <ClInclude Include="json.hpp" />
     <ClInclude Include="Transaction.h" />

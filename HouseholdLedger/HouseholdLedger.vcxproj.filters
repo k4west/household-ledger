@@ -24,15 +24,30 @@
     <ClCompile Include="CategoryManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="ApiServer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ConsoleUi.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
     <ClCompile Include="main.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="RpgService.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="ScheduleManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="Utils.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccountManager.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ApiServer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="BudgetManager.h">
@@ -41,10 +56,19 @@
     <ClInclude Include="CategoryManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="ConsoleUi.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="RpgService.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
     <ClInclude Include="ScheduleManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Transaction.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="httplib.h">
