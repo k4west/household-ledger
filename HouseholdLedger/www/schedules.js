@@ -134,6 +134,7 @@ async function deleteSchedule(id) {
 
 async function handleSubmit() {
   const payload = {
+    id: 0,
     name: elements.name.value.trim(),
     type: elements.type.value,
     amount: Number(elements.amount.value || 0),

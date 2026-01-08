@@ -6,7 +6,7 @@
     "endDate": "2025-12-31",
     "frequency": "MONTHLY_DATE",
     "id": 1,
-    "lastGenerated": "2025-12-25",
+    "lastGenerated": "",
     "name": "월급 급여",
     "startDate": "2025-01-01",
     "type": "INCOME"
@@ -18,7 +18,7 @@
     "endDate": "2025-12-31",
     "frequency": "MONTHLY_DATE",
     "id": 2,
-    "lastGenerated": "2025-12-01",
+    "lastGenerated": "",
     "name": "월세 납부",
     "startDate": "2025-01-01",
     "type": "EXPENSE"
@@ -30,9 +30,21 @@
     "endDate": "2025-12-31",
     "frequency": "MONTHLY_DATE",
     "id": 3,
-    "lastGenerated": "2025-12-15",
+    "lastGenerated": "",
     "name": "넷플릭스 구독",
     "startDate": "2025-01-01",
     "type": "EXPENSE"
+  },
+  {
+    "amount": 700000,
+    "category": "적금",
+    "day": 25,
+    "endDate": "2025-12-31",
+    "frequency": "MONTHLY_DATE",
+    "id": 1767833036987,
+    "lastGenerated": "",
+    "name": "청년적금",
+    "startDate": "2025-01-01",
+    "type": "SAVING"
   }
 ]
