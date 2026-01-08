@@ -1,3 +1,5 @@
+#define WIN32_LEAN_AND_MEAN
+
 #include <windows.h>
 #include <wrl.h>
 
@@ -117,7 +119,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCmd) {
 
     AppState state;
     state.mountPath = extractResourcesToTemp(instance);
-    register_routes(state.server, manager, categories, budgets, schedules, state.mountPath.u8string());
+    register_routes(state.server, manager, categories, budgets, schedules, state.mountPath.string());
     state.serverThread = std::thread([&state]() {
         state.server.listen("127.0.0.1", 8888);
     });
