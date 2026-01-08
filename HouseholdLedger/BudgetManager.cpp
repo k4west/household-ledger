@@ -2,14 +2,26 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
+#include <sstream>
 
 void BudgetManager::ensureDataDir() const {
-    std::filesystem::create_directories("data");
+    std::filesystem::create_directories(budgetDir());
 }
 
-BudgetManager::json BudgetManager::loadAll() const {
+std::filesystem::path BudgetManager::budgetDir() const {
+    return std::filesystem::path("data") / "budget";
+}
+
+std::filesystem::path BudgetManager::budgetFilePath(int year) const {
+    std::ostringstream filename;
+    filename << "budget_" << std::setw(4) << std::setfill('0') << year << ".json";
+    return budgetDir() / filename.str();
+}
+
+BudgetManager::json BudgetManager::loadBudget(int year) const {
     ensureDataDir();
-    std::ifstream in("data/budget.json");
+    std::ifstream in(budgetFilePath(year));
     if (!in.is_open()) {
         return json::object();
     }
@@ -21,57 +33,44 @@ BudgetManager::json BudgetManager::loadAll() const {
     return payload;
 }
 
-void BudgetManager::saveAll(const json& payload) const {
+void BudgetManager::saveBudget(int year, const json& payload) const {
     ensureDataDir();
-    std::ofstream out("data/budget.json");
+    std::ofstream out(budgetFilePath(year));
     out << payload.dump(2, ' ', false, json::error_handler_t::replace);
-}
-
-std::string BudgetManager::yearKey(int year) const {
-    return std::to_string(year);
 }
 
 BudgetManager::json BudgetManager::getBudgetForYear(int year) {
     std::lock_guard<std::mutex> lock(mtx_);
-    json payload = loadAll();
-    auto key = yearKey(year);
-    if (!payload.contains(key)) {
-        return json::object();
-    }
-    return payload.at(key);
+    return loadBudget(year);
 }
 
 void BudgetManager::setAnnualGoal(int year, const json& goalData) {
     std::lock_guard<std::mutex> lock(mtx_);
-    json payload = loadAll();
-    auto key = yearKey(year);
-    if (!payload.contains(key) || !payload.at(key).is_object()) {
-        payload[key] = json::object();
+    json payload = loadBudget(year);
+    if (!payload.is_object()) {
+        payload = json::object();
     }
-    payload[key]["annual_goals"] = goalData;
-    saveAll(payload);
+    payload["annual_goals"] = goalData;
+    saveBudget(year, payload);
 }
 
 void BudgetManager::setMonthlyBudget(int year, const std::string& month, const std::string& category, long long amount) {
     std::lock_guard<std::mutex> lock(mtx_);
-    json payload = loadAll();
-    auto key = yearKey(year);
-    if (!payload.contains(key) || !payload.at(key).is_object()) {
-        payload[key] = json::object();
+    json payload = loadBudget(year);
+    if (!payload.is_object()) {
+        payload = json::object();
     }
-    auto& yearData = payload[key];
-    yearData["monthly"][month]["expenses"][category] = amount;
-    saveAll(payload);
+    payload["monthly"][month]["expenses"][category] = amount;
+    saveBudget(year, payload);
 }
 
 void BudgetManager::upsertBudget(int year, const json& payloadUpdate) {
     std::lock_guard<std::mutex> lock(mtx_);
-    json payload = loadAll();
-    auto key = yearKey(year);
-    if (!payload.contains(key) || !payload.at(key).is_object()) {
-        payload[key] = json::object();
+    json payload = loadBudget(year);
+    if (!payload.is_object()) {
+        payload = json::object();
     }
-    auto& yearData = payload[key];
+    auto& yearData = payload;
     if (payloadUpdate.contains("annual_goals")) {
         yearData["annual_goals"] = payloadUpdate.at("annual_goals");
     }
@@ -92,5 +91,5 @@ void BudgetManager::upsertBudget(int year, const json& payloadUpdate) {
             }
         }
     }
-    saveAll(payload);
+    saveBudget(year, payload);
 }

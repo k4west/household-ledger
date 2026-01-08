@@ -4,7 +4,7 @@ import os
 import calendar
 
 # 1. 설정: 저장할 폴더 및 카테고리
-output_dir = "financial_data_2026"
+output_dir = os.path.join("financial_data_2026", "ledger_2026")
 os.makedirs(output_dir, exist_ok=True)  # 폴더가 없으면 생성
 
 categories = ["식비", "교통", "쇼핑", "기타"]
@@ -78,7 +78,7 @@ for month in range(1, 13):
     # 날짜 기준으로 데이터 정렬
     monthly_data.sort(key=lambda x: x['date'])
 
-    # 파일명 예: ledger_2026-01.json
+    # 파일명 예: ledger_2026/ledger_2026-01.json
     filename = f"ledger_2026-{month:02d}.json"
     filepath = os.path.join(output_dir, filename)
     
