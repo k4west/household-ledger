@@ -15,6 +15,11 @@ let activeTypeFilters = new Set(["income", "expense", "saving", "transfer"]);
 let activeCategoryFilters = new Set();
 let isYearView = false;
 let memoTransaction = null;
+let rpgStatusAnimation = {
+  intervalId: null,
+  key: null,
+  frameIndex: 0,
+};
 
 const elements = {
   list: document.getElementById("transaction-list"),
@@ -46,6 +51,7 @@ const elements = {
   rpgHpBar: document.getElementById("rpg-hp-bar"),
   rpgMultiplier: document.getElementById("rpg-multiplier"),
   rpgRoles: document.getElementById("rpg-roles"),
+  rpgStatusVisual: document.getElementById("rpg-status-visual"),
   editModal: document.getElementById("editTransactionModal"),
   editDate: document.getElementById("edit-date"),
   editType: document.getElementById("edit-type"),
@@ -58,6 +64,134 @@ const elements = {
   memoTextarea: document.getElementById("memo-textarea"),
   memoSaveBtn: document.getElementById("save-memo-btn"),
 };
+
+const RPG_STATUS_FRAMES = {
+  gameOver: [
+    String.raw`   _______
+  / RIP  /|
+ /______/ |
+ | EMPTY| |
+ |WALLET| /
+ |_____ |/
+☠ GAME OVER`,
+    String.raw`   _______
+  / RIP  /|
+ /______/ |
+ | EMPTY| |
+ |WALLET| /
+ |_____ |/
+☠ GAME OVER`,
+  ],
+  bossFight: [
+    String.raw` (⚠ WARNING ⚠)
+   👹👹👹
+  /|__||__|\
+  \  BOSS  /
+   \______/`,
+    String.raw` (⚠ WARNING ⚠)
+   👹👹👹
+  /|__||__|\
+  /  BOSS  \
+   \______/`,
+  ],
+  battle: [
+    String.raw` YOU ⚔ GREMLIN
+   _O_   _^_
+  /| |\ (oo)
+  / \  /|__|\
+   [FIGHT!]`,
+    String.raw` YOU ⚔ GREMLIN
+   _O_   _^_
+  /| |\ (oo)
+  / \  /|__|\
+   [CLASH!]`,
+  ],
+  kingdom: [
+    String.raw`    /\  /\
+   /__\/__\ 🏰
+   |  __  |
+   | |__| |
+   |  👑  |
+   |______|
+   [WEALTH]`,
+    String.raw`    /\  /\
+   /__\/__\ 🏰
+   |  __  |
+   | |__| |
+   |  👑  |
+   |______|
+   [GLORY]`,
+  ],
+  danger: [
+    String.raw`  (Help...)
+   O  🛡️
+  /|\ |]
+  / \ |]
+ _/ \_|]
+ [DANGER]`,
+    String.raw`  (Help...)
+   O  🛡️
+  /|\ |]
+  / \ |]
+ _/ \_|]
+ [ALERT]`,
+  ],
+  adventure: [
+    String.raw`    ☁  ☀
+     O /
+    /|/
+    / \
+   /  /
+  [WALK]`,
+    String.raw`    ☁  ☀
+     O
+    /|\
+    / \
+   /  /
+  [STEP]`,
+  ],
+};
+
+function getRpgScenario({ hp, gremlinCount, level }) {
+  if (hp <= 0) {
+    return { key: "game-over", frames: RPG_STATUS_FRAMES.gameOver };
+  }
+  if (hp > 0 && gremlinCount >= 5) {
+    return { key: "boss-fight", frames: RPG_STATUS_FRAMES.bossFight };
+  }
+  if (hp > 0 && gremlinCount > 3) {
+    return { key: "battle", frames: RPG_STATUS_FRAMES.battle };
+  }
+  if (level >= 10 && gremlinCount === 0) {
+    return { key: "kingdom", frames: RPG_STATUS_FRAMES.kingdom };
+  }
+  if (hp < 30 && gremlinCount === 0) {
+    return { key: "danger", frames: RPG_STATUS_FRAMES.danger };
+  }
+  return { key: "adventure", frames: RPG_STATUS_FRAMES.adventure };
+}
+
+function startRpgStatusAnimation(scenario) {
+  if (!elements.rpgStatusVisual) return;
+  const { key, frames } = scenario;
+  const safeFrames = frames && frames.length ? frames : RPG_STATUS_FRAMES.adventure;
+  if (rpgStatusAnimation.intervalId && rpgStatusAnimation.key !== key) {
+    clearInterval(rpgStatusAnimation.intervalId);
+    rpgStatusAnimation.intervalId = null;
+    rpgStatusAnimation.frameIndex = 0;
+  }
+  if (!rpgStatusAnimation.intervalId) {
+    rpgStatusAnimation.key = key;
+    rpgStatusAnimation.frameIndex = 0;
+    elements.rpgStatusVisual.textContent = safeFrames[0];
+    rpgStatusAnimation.intervalId = setInterval(() => {
+      rpgStatusAnimation.frameIndex =
+        (rpgStatusAnimation.frameIndex + 1) % safeFrames.length;
+      elements.rpgStatusVisual.textContent =
+        safeFrames[rpgStatusAnimation.frameIndex];
+    }, 700);
+  }
+}
 
 function formatAmount(value) {
   return Number(value).toLocaleString();
@@ -557,12 +691,18 @@ function renderRpgStatus(payload) {
   const hp = payload.party_hp ?? 100;
   const multiplier = payload.total_multiplier ?? 1;
   const roles = payload.roles || {};
+  const gremlinCount = Number(roles.gremlin || 0);
+  const scenario = getRpgScenario({ hp, gremlinCount, level });
 
   elements.rpgLevel.textContent = `Lv. ${level}`;
   elements.rpgExp.textContent = totalExp.toFixed(2);
   elements.rpgHp.textContent = `${hp.toFixed(1)} / 100`;
   elements.rpgHpBar.style.width = `${Math.min(hp, 100)}%`;
   elements.rpgMultiplier.textContent = `${multiplier.toFixed(2)}x`;
+  if (elements.rpgStatusVisual) {
+    elements.rpgStatusVisual.className = `rpg-status-visual status-${scenario.key}`;
+    startRpgStatusAnimation(scenario);
+  }
 
   elements.rpgRoles.innerHTML = "";
   const roleItems = [

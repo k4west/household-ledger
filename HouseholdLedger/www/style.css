@@ -129,3 +129,53 @@ body {
   outline: 3px solid rgba(30, 136, 229, 0.35);
   outline-offset: 2px;
 }
+
+.rpg-status-visual {
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo",
+    monospace;
+  white-space: pre;
+  line-height: 1.12;
+  font-size: 0.8rem;
+  margin: 0.5rem 0 0;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  background: #0f172a;
+  color: #e2e8f0;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25);
+}
+
+.rpg-status-visual.status-game-over {
+  background: #2b1111;
+  color: #fecaca;
+  box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.35);
+}
+
+.rpg-status-visual.status-boss-fight {
+  background: #2a1232;
+  color: #f5d0fe;
+  box-shadow: inset 0 0 0 1px rgba(216, 180, 254, 0.4);
+}
+
+.rpg-status-visual.status-battle {
+  background: #1f2937;
+  color: #bae6fd;
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.35);
+}
+
+.rpg-status-visual.status-kingdom {
+  background: #10241a;
+  color: #bbf7d0;
+  box-shadow: inset 0 0 0 1px rgba(74, 222, 128, 0.35);
+}
+
+.rpg-status-visual.status-danger {
+  background: #2b1a0b;
+  color: #fde68a;
+  box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.35);
+}
+
+.rpg-status-visual.status-adventure {
+  background: #0f172a;
+  color: #e2e8f0;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25);
+}
