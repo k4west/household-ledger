@@ -23,6 +23,7 @@ const elements = {
   editAnnualSavings: document.getElementById("edit-annual-savings"),
   editAnnualExpense: document.getElementById("edit-annual-expense"),
   editMonthSelect: document.getElementById("edit-month-select"),
+  applyJanToAllBtn: document.getElementById("apply-jan-to-all"),
   copyPrevMonthBtn: document.getElementById("copy-prev-month"),
   editMonthlySavings: document.getElementById("edit-monthly-savings"),
   editBudgetRows: document.getElementById("edit-budget-rows"),
@@ -263,6 +264,7 @@ function buildBudgetRows() {
     elements.editBudgetRows.appendChild(row);
   });
   elements.editMonthlySavings.value = monthData.goals?.monthly_savings || 0;
+  updateApplyAllButton();
 }
 
 function copyPreviousMonth() {
@@ -278,27 +280,50 @@ function copyPreviousMonth() {
   elements.editMonthlySavings.value = prevData.goals?.monthly_savings || 0;
 }
 
-async function saveBudget() {
-  const year = getSelectedYear();
-  const monthKey = elements.editMonthSelect.value;
+function collectMonthlyInputs() {
   const expenses = {};
   elements.editBudgetRows.querySelectorAll("input[data-category]").forEach((input) => {
     expenses[input.dataset.category] = Number(input.value || 0);
   });
+  return {
+    expenses,
+    goals: {
+      monthly_savings: Number(elements.editMonthlySavings.value || 0),
+    },
+  };
+}
+
+function buildMonthlyPayload(applyToAllMonths) {
+  const monthKey = elements.editMonthSelect.value;
+  const monthlyData = collectMonthlyInputs();
+  if (!applyToAllMonths) {
+    return { [monthKey]: monthlyData };
+  }
+  return Array.from({ length: 12 }, (_, idx) => String(idx + 1).padStart(2, "0")).reduce(
+    (acc, key) => {
+      acc[key] = monthlyData;
+      return acc;
+    },
+    {}
+  );
+}
+
+function updateApplyAllButton() {
+  const isJanuary = elements.editMonthSelect.value === "01";
+  elements.applyJanToAllBtn.classList.toggle("d-none", !isJanuary);
+}
+
+async function saveBudget(applyToAllMonths = false) {
+  const year = getSelectedYear();
+  const isJanuary = elements.editMonthSelect.value === "01";
+  const monthly = buildMonthlyPayload(applyToAllMonths && isJanuary);
   const payload = {
     year,
     annual_goals: {
       total_savings: Number(elements.editAnnualSavings.value || 0),
       total_expense_limit: Number(elements.editAnnualExpense.value || 0),
     },
-    monthly: {
-      [monthKey]: {
-        expenses,
-        goals: {
-          monthly_savings: Number(elements.editMonthlySavings.value || 0),
-        },
-      },
-    },
+    monthly,
   };
 
   try {
@@ -321,6 +346,7 @@ function openEditModal() {
   elements.editAnnualSavings.value = budgetData.annual_goals?.total_savings || 0;
   elements.editAnnualExpense.value = budgetData.annual_goals?.total_expense_limit || 0;
   buildBudgetRows();
+  updateApplyAllButton();
   const modal = new bootstrap.Modal(elements.editModal);
   modal.show();
 }
@@ -343,4 +369,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   elements.editMonthSelect.addEventListener("change", buildBudgetRows);
   elements.copyPrevMonthBtn.addEventListener("click", copyPreviousMonth);
   elements.saveBudgetBtn.addEventListener("click", saveBudget);
+  elements.applyJanToAllBtn.addEventListener("click", () => saveBudget(true));
 });
