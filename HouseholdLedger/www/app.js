@@ -67,88 +67,214 @@ const elements = {
 
 const RPG_STATUS_FRAMES = {
   gameOver: [
-    String.raw`   _______
-  / RIP  /|
- /______/ |
- | EMPTY| |
- |WALLET| /
- |_____ |/
-☠ GAME OVER`,
-    String.raw`   _______
-  / RIP  /|
- /______/ |
- | EMPTY| |
- |WALLET| /
- |_____ |/
-☠ GAME OVER`,
+    String.raw`      _____________
+     /  R.I.P.    /|
+    / ___________/ |
+    |  EMPTY     | |
+    |  WALLET    | |
+    |____________|/
+        ⚰️  GAME OVER
+     ───────────────`,
+    String.raw`      _____________
+     /  R.I.P.    /|
+    / ___________/ |
+    |  EMPTY     | |
+    |  WALLET    | |
+    |____________|/
+        ☠️  GAME OVER
+     ───────────────`,
+    String.raw`      _____________
+     /  R.I.P.    /|
+    / ___________/ |
+    |  EMPTY     | |
+    |  WALLET    | |
+    |____________|/
+       🕯️  GAME OVER
+     ───────────────`,
   ],
   bossFight: [
-    String.raw` (⚠ WARNING ⚠)
-   👹👹👹
-  /|__||__|\
-  \  BOSS  /
-   \______/`,
-    String.raw` (⚠ WARNING ⚠)
-   👹👹👹
-  /|__||__|\
-  /  BOSS  \
-   \______/`,
+    String.raw` (⚠ WARNING ⚠)   ⚡⚡
+    🐉🔥🔥🔥🔥🔥
+  /|__||__||__| \
+ /    BOSS RAID  \
+ \_____/___\_____/`,
+    String.raw` (⚠ WARNING ⚠)   ⚡⚡
+    🐲🔥🔥🔥🔥🔥
+  /|__||__||__| \
+ /   BOSS STRIKE \
+ \_____/___\_____/`,
+    String.raw` (⚠ WARNING ⚠)   ⚡⚡
+    🐉🔥🔥🔥🔥💥
+  /|__||__||__| \
+ /   BOSS STRIKE \
+ \_____/___\_____/`,
+    String.raw` (⚠ WARNING ⚠)   ⚡⚡
+    🐲🔥🔥🔥💥🔥
+  /|__||__||__| \
+ /   BOSS STRIKE \
+ \_____/___\_____/`,
+    String.raw` (⚠ WARNING ⚠)   ⚔️💥
+    🐉🔥🔥💥🔥🔥
+  /|__||__||__| \
+ /   BOSS ATTACK \
+ \_____/___\_____/`,
+    String.raw` (⚠ WARNING ⚠)   ⚔️💥
+    🐲🔥💥🔥🔥🔥
+  /|__||__||__| \
+ /   BOSS ATTACK \
+ \_____/___\_____/`,
   ],
   battle: [
-    String.raw` YOU ⚔ GREMLIN
-   _O_   _^_
-  /| |\ (oo)
-  / \  /|__|\
-   [FIGHT!]`,
-    String.raw` YOU ⚔ GREMLIN
-   _O_   _^_
-  /| |\ (oo)
-  / \  /|__|\
-   [CLASH!]`,
+    String.raw`   YOU ⚔ GREMLIN BRIGADE
+    _O_      _^_ _^_
+   /| |\    (oo)(oo)
+    / \     /|__||__|\
+  ==[  FIGHT ON!  ]==`,
+    String.raw`   YOU ⚔ GREMLIN BRIGADE
+     _O_     _^_ _^_
+    /| |\   (><)(oo)
+     / \    /|__||__|\
+  ==[   CLASH!!   ]==`,
+    String.raw`   YOU ⚔ GREMLIN BRIGADE
+     _O_    _^_ _^_
+    /| |\  (oo)(><)
+     / \   /|__||__|\
+  ==[  STRIKE!!  ]==`,
+    String.raw`   YOU ⚔ GREMLIN BRIGADE
+     _O_ 💥_^_ _^_
+    /| |\  (xx)(oo)
+     / \   /|__||__|\
+  ==[  COLLIDE!  ]==`,
+    String.raw`   YOU ⚔ GREMLIN BRIGADE
+     _O_💥 _^_ _^_
+    /| |\  (><)(xx)
+     / \   /|__||__|\
+  ==[  IMPACT!!  ]==`,
+    String.raw`   YOU ⚔ GREMLIN BRIGADE
+     _O_⚔️💥_^_ _^_
+    /| |\   (xx)(xx)
+     / \   /|__||__|\
+  ==[  SMASH!!  ]==`,
   ],
   kingdom: [
-    String.raw`    /\  /\
-   /__\/__\ 🏰
-   |  __  |
-   | |__| |
-   |  👑  |
-   |______|
-   [WEALTH]`,
-    String.raw`    /\  /\
-   /__\/__\ 🏰
-   |  __  |
-   | |__| |
-   |  👑  |
-   |______|
-   [GLORY]`,
+    String.raw`        /\  /\  ⚑
+       /__\/__\ 🏰
+       |  __  |  💰
+       | |__| |  💎
+       |  👑  |  ✨
+       |______|  ✨
+    ==[  WEALTH  ]==`,
+    String.raw`        /\  /\  ⚑
+       /__\/__\ 🏰
+       |  __  |  💰
+       | |__| |  💎
+       |  👑  |  ✨
+       |______|  ✨
+    ==[   GLORY  ]==`,
+    String.raw`        /\  /\  ⚑
+       /__\/__\ 🏰
+       |  __  |  💰
+       | |__| |  💎
+       |  👑  |  ✨
+       |______|  ✨
+    ==[   HONOR  ]==`,
+    String.raw`        /\  /\  ⚑
+       /__\/__\ 🏰
+       |  __  |  💰
+       | |__| |  💎
+       |  👑  | 🎆🎆
+       |______| 🎆🎆
+    ==[ FIREWORK ]==`,
+    String.raw`        /\  /\  ⚑
+       /__\/__\ 🏰
+       |  __  |  💰
+       | |__| |  💎
+       |  👑  | 🎆✨
+       |______| ✨🎆
+    ==[  SPARKS  ]==`,
+    String.raw`        /\  /\  ⚑
+       /__\/__\ 🏰
+       |  __  |  💰
+       | |__| |  💎
+       |  👑  | 🎇🎇
+       |______| 🎇🎇
+    ==[  FESTA   ]==`,
   ],
   danger: [
-    String.raw`  (Help...)
-   O  🛡️
-  /|\ |]
-  / \ |]
- _/ \_|]
- [DANGER]`,
-    String.raw`  (Help...)
-   O  🛡️
-  /|\ |]
-  / \ |]
- _/ \_|]
- [ALERT]`,
+    String.raw`   (Help... storm!)
+    O    🌩️🌩️
+   /|\  |]
+   / \  |]
+ _/   \_|]
+==[   DANGER   ]==`,
+    String.raw`   (Hold on...!)
+    O   🌩️🌩️
+   /|\  |]
+   / \  |]
+ _/   \_|]
+==[    ALERT   ]==`,
+    String.raw`   (Stay sharp!)
+    O  🌩️🌩️
+   /|\  |]
+   / \  |]
+ _/   \_|]
+==[   BRACE   ]==`,
+    String.raw`   (⚡ ZAP!)
+    O ⚡🌩️
+   /|\  |]
+   / \  |]
+ _/   \_|]
+==[  STRUCK  ]==`,
+    String.raw`   (⚡ HIT!!)
+    O⚡⚡
+   /|\  |]
+   / \ _|]
+ _/   \_|]
+==[  SHOCK!  ]==`,
+    String.raw`   (⚡ RUMBLE!)
+    ⚡   ⚡
+   /|\  |]
+   / \ _|]
+ _/   \_|]
+==[  SURVIVE ]==`,
   ],
   adventure: [
-    String.raw`    ☁  ☀
-     O /
-    /|/
-    / \
-   /  /
-  [WALK]`,
-    String.raw`    ☁  ☀
-     O
-    /|\
-    / \
-   /  /
-  [STEP]`,
+    String.raw`     ☁  ☀      🗺️
+      O        ⛺
+     /|\/
+     / \     🌲
+    /  /    🌲
+  ==[  WALK  ]==`,
+    String.raw`     ☁  ☀      🗺️
+      O        ⛺
+     /|\_
+     / \     🌲
+    /  /    🌲
+  ==[  STEP  ]==`,
+    String.raw`     ☁  ☀      🗺️
+      O        ⛺
+     /|\/
+     / \    🌲🌲
+    /  /    🌲
+  ==[  TREK  ]==`,
+    String.raw`     ☁  ☀      🗺️
+      O \      ⛺
+     /|\/
+     / \   🌲🌲
+    /  /    🌲
+  ==[  RUN!  ]==`,
+    String.raw`     ☁  ☀      🗺️
+       O       ⛺
+      /|\/
+      / \   🌲🌲
+     /  /   🌲
+   ==[  DASH  ]==`,
+    String.raw`     ☁  ☀      🗺️
+       O       ⛺
+      /|\_
+      / \   🌲
+     /  /  🌲🌲
+   ==[  SPRINT ]==`,
   ],
 };
 
