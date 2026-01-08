@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <mutex>
 #include <string>
 
@@ -16,9 +17,10 @@ public:
 
 private:
     void ensureDataDir() const;
-    json loadAll() const;
-    void saveAll(const json& payload) const;
-    std::string yearKey(int year) const;
+    std::filesystem::path budgetDir() const;
+    std::filesystem::path budgetFilePath(int year) const;
+    json loadBudget(int year) const;
+    void saveBudget(int year, const json& payload) const;
 
     mutable std::mutex mtx_;
 };

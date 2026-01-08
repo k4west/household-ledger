@@ -18,11 +18,17 @@ std::filesystem::path AccountManager::dataDir() const {
     return std::filesystem::path("data");
 }
 
+std::filesystem::path AccountManager::ledgerYearDir(int year) const {
+    std::ostringstream dirname;
+    dirname << "ledger_" << std::setw(4) << std::setfill('0') << year;
+    return dataDir() / dirname.str();
+}
+
 std::filesystem::path AccountManager::ledgerFilePath(int year, int month) const {
     std::ostringstream filename;
     filename << "ledger_" << std::setw(4) << std::setfill('0') << year << "-"
              << std::setw(2) << std::setfill('0') << month << ".json";
-    return dataDir() / filename.str();
+    return ledgerYearDir(year) / filename.str();
 }
 
 bool AccountManager::parseYearMonthFromFilename(const std::filesystem::path& path, int& year, int& month) const {
@@ -39,6 +45,17 @@ bool AccountManager::parseYearMonthFromFilename(const std::filesystem::path& pat
     } catch (const std::exception&) {
         return false;
     }
+    auto parentName = path.parent_path().filename().string();
+    if (parentName.rfind("ledger_", 0) == 0 && parentName.size() >= 11) {
+        try {
+            int dirYear = std::stoi(parentName.substr(7, 4));
+            if (dirYear != year) {
+                return false;
+            }
+        } catch (const std::exception&) {
+            return false;
+        }
+    }
     return year > 0 && month >= 1 && month <= 12;
 }
 
@@ -54,7 +71,7 @@ std::vector<Transaction> AccountManager::readLedgerFile(const std::filesystem::p
 
 void AccountManager::writeLedgerFile(const std::filesystem::path& path,
                                      const std::vector<Transaction>& ledger) const {
-    ensureDataDir();
+    std::filesystem::create_directories(path.parent_path());
     json payload = ledger;
     std::ofstream out(path);
     out << payload.dump(2, ' ', false, json::error_handler_t::replace);
@@ -64,13 +81,23 @@ std::vector<std::filesystem::path> AccountManager::listLedgerFiles() const {
     std::vector<std::filesystem::path> files;
     ensureDataDir();
     for (const auto& entry : std::filesystem::directory_iterator(dataDir())) {
-        if (!entry.is_regular_file()) {
+        if (!entry.is_directory()) {
             continue;
         }
-        const auto& path = entry.path();
-        const auto name = path.filename().string();
-        if (name.rfind("ledger_", 0) == 0 && path.extension() == ".json") {
-            files.push_back(path);
+        const auto& dir = entry.path();
+        const auto dirName = dir.filename().string();
+        if (dirName.rfind("ledger_", 0) != 0) {
+            continue;
+        }
+        for (const auto& fileEntry : std::filesystem::directory_iterator(dir)) {
+            if (!fileEntry.is_regular_file()) {
+                continue;
+            }
+            const auto& path = fileEntry.path();
+            const auto name = path.filename().string();
+            if (name.rfind("ledger_", 0) == 0 && path.extension() == ".json") {
+                files.push_back(path);
+            }
         }
     }
     return files;

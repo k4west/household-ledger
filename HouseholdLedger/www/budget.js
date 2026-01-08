@@ -46,13 +46,14 @@ function getCurrentMonthKey() {
 function buildYearOptions() {
   const now = new Date();
   const currentYear = now.getFullYear();
+  const startYear = 1900;
+  const endYear = 2100;
   elements.yearSelect.innerHTML = "";
-  for (let offset = -1; offset <= 1; offset += 1) {
-    const year = currentYear + offset;
+  for (let year = startYear; year <= endYear; year += 1) {
     const option = document.createElement("option");
     option.value = year;
     option.textContent = `${year}년`;
-    if (offset === 0) {
+    if (year === currentYear) {
       option.selected = true;
     }
     elements.yearSelect.appendChild(option);

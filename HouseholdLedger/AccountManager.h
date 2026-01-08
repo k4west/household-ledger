@@ -11,6 +11,7 @@ class AccountManager {
 private:
     void ensureDataDir() const;
     std::filesystem::path dataDir() const;
+    std::filesystem::path ledgerYearDir(int year) const;
     std::filesystem::path ledgerFilePath(int year, int month) const;
     bool parseYearMonthFromFilename(const std::filesystem::path& path, int& year, int& month) const;
     std::vector<Transaction> readLedgerFile(const std::filesystem::path& path) const;
