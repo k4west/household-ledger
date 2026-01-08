@@ -10,7 +10,8 @@ void register_routes(httplib::Server& svr,
                      AccountManager& manager,
                      CategoryManager& categories,
                      BudgetManager& budgets,
-                     ScheduleManager& schedules) {
+                     ScheduleManager& schedules,
+                     const std::string& mountPath) {
     svr.set_default_headers({ {"Access-Control-Allow-Origin", "*"} });
 
     svr.Get("/api/transactions", [&manager, &categories](const httplib::Request& req, httplib::Response& res) {
@@ -342,5 +343,5 @@ void register_routes(httplib::Server& svr,
         res.set_content(R"({"status":"ok"})", "application/json");
     });
 
-    svr.set_mount_point("/", "./www");
+    svr.set_mount_point("/", mountPath.c_str());
 }
