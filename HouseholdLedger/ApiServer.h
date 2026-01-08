@@ -10,4 +10,5 @@ void register_routes(httplib::Server& svr,
                      AccountManager& manager,
                      CategoryManager& categories,
                      BudgetManager& budgets,
-                     ScheduleManager& schedules);
+                     ScheduleManager& schedules,
+                     const std::string& mountPath);

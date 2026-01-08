@@ -1,0 +1,11 @@
+#include <windows.h>
+
+101 FILE "www\\index.html"
+102 FILE "www\\app.js"
+103 FILE "www\\style.css"
+104 FILE "www\\budget.html"
+105 FILE "www\\budget.js"
+106 FILE "www\\rpg_preview.html"
+107 FILE "www\\rpg_preview.md"
+108 FILE "www\\schedules.html"
+109 FILE "www\\schedules.js"
